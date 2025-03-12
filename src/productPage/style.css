@@ -1,0 +1,141 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f8f8;
+}
+
+header {
+    background-color: #00b0f0;
+    color: #fff;
+    padding: 20px 10%;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2.5rem;
+}
+
+header p {
+    margin-top: 5px;
+    font-size: 1rem;
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    background-color: #333;
+    padding: 15px 10%;
+}
+
+nav a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 20px;
+    font-size: 1.1rem;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+.product-details {
+    display: flex;
+    padding: 20px 10%;
+    gap: 40px;
+}
+
+.product-left {
+    flex: 1;
+    text-align: center;
+}
+
+.product-left h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.product-image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.product-right {
+    flex: 1;
+}
+
+.product-right .description {
+    font-size: 1.2rem;
+    color: #555;
+    line-height: 1.6;
+}
+
+.product-rating {
+    margin-top: 20px;
+}
+
+.product-rating p {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
+.product-rating form {
+    display: flex;
+    gap: 10px;
+}
+
+.product-rating input[type="radio"] {
+    display: none;
+}
+
+.product-rating label {
+    font-size: 1.5rem;
+    color: #ccc;
+    cursor: pointer;
+}
+
+.product-rating input[type="radio"]:checked ~ label {
+    color: #ffcc00;
+}
+
+.product-comment {
+    margin-top: 20px;
+}
+
+.product-comment textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+button {
+    background-color: #00b0f0;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 1rem;
+}
+
+button:hover {
+    background-color: #009cc0;
+}
+
+footer {
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 20px 10%;
+    margin-top: 20px;
+}
+
+footer p {
+    margin: 5px 0;
+}

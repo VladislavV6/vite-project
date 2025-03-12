@@ -1,0 +1,43 @@
+.favorites {
+    padding: 30px 10%;
+    background-color: #f8f8f8;
+}
+
+.favorites h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.favorites-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.favorite-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.favorite-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.favorite-item h3 {
+    font-size: 1.2rem;
+    margin: 10px 0;
+}
+
+.favorite-item .price {
+    font-size: 1.2rem;
+    color: #00b0f0;
+    margin: 10px 0;
+}

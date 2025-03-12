@@ -1,0 +1,44 @@
+.purchase-history {
+    padding: 20px 10%;
+}
+
+.purchase-history h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.purchase-history table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.purchase-history th, .purchase-history td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+}
+
+.purchase-history th {
+    background-color: #00b0f0;
+    color: #fff;
+}
+
+.purchase-history tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
+
+.purchase-history tr:hover {
+    background-color: #f1f1f1;
+}
+
+.purchase-history ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.purchase-history ul li {
+    margin: 5px 0;
+}
