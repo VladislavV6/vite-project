@@ -1,12 +1,10 @@
 .favorites {
-    padding: 30px 10%;
-    background-color: #f8f8f8;
+    padding: 20px;
 }
 
 .favorites h2 {
     font-size: 2rem;
     margin-bottom: 20px;
-    text-align: center;
 }
 
 .favorites-list {

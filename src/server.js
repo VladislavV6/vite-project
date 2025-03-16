@@ -175,6 +175,24 @@ app.delete('/favorites', async (req, res) => {
     }
 });
 
+app.get('/favorites/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT p.* FROM "TechStore"."favorites" f
+             JOIN "TechStore"."products" p ON f.product_id = p.product_id
+             WHERE f.user_id = $1`,
+            [user_id]
+        );
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Ошибка при получении избранных товаров:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });

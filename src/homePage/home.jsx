@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchTerm, clearSearchTerm } from "../store/slices/searchSlice";
 import AddProductForm from './addproduct.jsx';
-import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation } from '../store/slices/apiSlice.js';
+import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation, useGetFavoritesQuery } from '../store/slices/apiSlice.js';
+import { setFavorites, addFavorite, removeFavorite } from '../store/slices/favoritesSlice';
 import "./style.css";
 
 function HomePage() {
@@ -11,16 +12,18 @@ function HomePage() {
     const searchTerm = useSelector((state) => state.search.searchTerm);
     const user = useSelector(state => state.auth.user);
     const [showForm, setShowForm] = useState(false);
-    const [favorites, setFavorites] = useState([]);
-    const [addFavorite] = useAddFavoriteMutation();
-    const [removeFavorite] = useRemoveFavoriteMutation();
-
+    const [addFavoriteMutation] = useAddFavoriteMutation();
+    const [removeFavoriteMutation] = useRemoveFavoriteMutation();
+    const favorites = useSelector(state => state.favorites.items);
+    const { data: favoritesData } = useGetFavoritesQuery(user?.user_id);
 
     const { data: products = [], refetch } = useGetProductsQuery();
 
     useEffect(() => {
-        console.log('User data in HomePage:', user);
-    }, [user]);
+        if (favoritesData) {
+            dispatch(setFavorites(favoritesData.map(item => item.product_id)));
+        }
+    }, [favoritesData, dispatch]);
 
     const filteredProducts = products.filter(product =>
         product.product_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -35,23 +38,22 @@ function HomePage() {
         try {
             const favoriteData = { user_id: user.user_id, product_id: productId };
 
-            const isFavorite = user.favorites?.includes(productId);
+            const isFavorite = favorites.includes(productId);
 
             if (isFavorite) {
-                await removeFavorite(favoriteData).unwrap();
+                await removeFavoriteMutation(favoriteData).unwrap();
+                dispatch(removeFavorite(productId));
                 alert('Товар удален из избранного');
             } else {
-                await addFavorite(favoriteData).unwrap();
+                await addFavoriteMutation(favoriteData).unwrap();
+                dispatch(addFavorite(productId));
                 alert('Товар добавлен в избранное');
             }
-
-            refetch();
         } catch (err) {
             console.error('Ошибка при работе с избранным:', err);
             alert('Ошибка при работе с избранным');
         }
     };
-
 
     const handleAddToCart = (productId) => {
         console.log(`Товар с ID ${productId} добавлен в корзину`);
@@ -70,7 +72,7 @@ function HomePage() {
             </section>
 
             {user && (
-                <div style={{border: '2px solid red', padding: '10px'}}>
+                <div style={{ border: '2px solid red', padding: '10px' }}>
                     <pre>Role ID: {JSON.stringify(user.role_id)}</pre>
                     {Number(user.role_id) === 1 && (
                         <button onClick={() => setShowForm(true)}>Добавить товар</button>
@@ -100,14 +102,14 @@ function HomePage() {
                 {filteredProducts.map((product) => (
                     <div key={product.product_id} className="product-card">
                         <div
-                            className={`favorite-icon ${user?.favorites?.includes(product.product_id) ? 'active' : ''}`}
+                            className={`favorite-icon ${favorites.includes(product.product_id) ? 'active' : ''}`}
                             onClick={() => handleFavorite(product.product_id)}
                         >
-                            {user?.favorites?.includes(product.product_id) ? '❤️' : '♡'}
+                            {favorites.includes(product.product_id) ? '❤️' : '♡'}
                         </div>
 
                         <Link to={`/product/${product.product_id}`}>
-                            <img src={product.product_image} alt={product.product_name}/>
+                            <img src={product.product_image} alt={product.product_name} />
                         </Link>
                         <Link to={`/product/${product.product_id}`}>
                             <h3>{product.product_name}</h3>

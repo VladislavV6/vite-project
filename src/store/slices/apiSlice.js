@@ -45,6 +45,9 @@ export const apiSlice = createApi({
                 body: favoriteData,
             }),
         }),
+        getFavorites: builder.query({
+            query: (user_id) => `/favorites/${user_id}`,
+        }),
     }),
 });
 
@@ -56,4 +59,5 @@ export const {
     useGetProductQuery,
     useAddFavoriteMutation,
     useRemoveFavoriteMutation,
+    useGetFavoritesQuery,
 } = apiSlice;

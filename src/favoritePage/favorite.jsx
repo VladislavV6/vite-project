@@ -1,11 +1,20 @@
 import React from 'react';
-import "./style.css"
+import { useSelector } from 'react-redux';
+import { useGetFavoritesQuery } from '../store/slices/apiSlice';
+import "./style.css";
 
 function FavoritesPage() {
-    const favorites = [
-        { id: 1, name: 'Смартфон XYZ', price: '₽ 40,000', image: 'https://via.placeholder.com/220x150' },
-        { id: 2, name: 'Ноутбук ABC', price: '₽ 80,000', image: 'https://via.placeholder.com/220x150' },
-    ];
+    const user = useSelector(state => state.auth.user);
+    const favorites = useSelector(state => state.favorites.items);
+    const { data: favoritesData = [], isLoading, isError } = useGetFavoritesQuery(user?.user_id);
+
+    if (isLoading) {
+        return <div>Загрузка...</div>;
+    }
+
+    if (isError) {
+        return <div>Ошибка при загрузке избранного</div>;
+    }
 
     return (
         <div>
@@ -17,12 +26,13 @@ function FavoritesPage() {
             <section className="favorites">
                 <h2>Избранное</h2>
                 <div className="favorites-list">
-                    {favorites.length > 0 ? (
-                        favorites.map((item) => (
-                            <div key={item.id} className="favorite-item">
-                                <img src={item.image} alt={item.name} />
-                                <h3>{item.name}</h3>
-                                <p className="price">{item.price}</p>
+                    {favoritesData.length > 0 ? (
+                        favoritesData.map((item) => (
+                            <div key={item.product_id} className="favorite-item">
+                                <img src={item.product_image} alt={item.product_name} />
+                                <h3>{item.product_name}</h3>
+                                <p className="price">₽ {item.price}</p>
+                                <p>{favorites.includes(item.product_id) ? 'В избранном' : 'Не в избранном'}</p>
                             </div>
                         ))
                     ) : (
