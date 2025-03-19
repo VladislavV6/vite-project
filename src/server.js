@@ -193,6 +193,127 @@ app.get('/favorites/:user_id', async (req, res) => {
     }
 });
 
+app.post('/cart', async (req, res) => {
+    const { user_id, product_id, quantity_of_products } = req.body;
+
+    try {
+        const quantity = parseInt(quantity_of_products, 10);
+        if (isNaN(quantity)) {
+            return res.status(400).json({ message: 'Некорректное количество товара' });
+        }
+
+        const existingCartItem = await pool.query(
+            'SELECT * FROM "TechStore"."cart" WHERE user_id = $1 AND product_id = $2',
+            [user_id, product_id]
+        );
+
+        if (existingCartItem.rows.length > 0) {
+            const currentQuantity = parseInt(existingCartItem.rows[0].quantity_of_products, 10);
+            const updatedQuantity = currentQuantity + quantity;
+
+            const result = await pool.query(
+                'UPDATE "TechStore"."cart" SET quantity_of_products = $1 WHERE cart_id = $2 RETURNING *',
+                [updatedQuantity, existingCartItem.rows[0].cart_id]
+            );
+            res.status(200).json({ message: 'Количество товара обновлено', cartItem: result.rows[0] });
+        } else {
+            const result = await pool.query(
+                'INSERT INTO "TechStore"."cart" (user_id, product_id, quantity_of_products, date_added) VALUES ($1, $2, $3, CURRENT_DATE) RETURNING *',
+                [user_id, product_id, quantity]
+            );
+            res.status(201).json({ message: 'Товар добавлен в корзину', cartItem: result.rows[0] });
+        }
+    } catch (err) {
+        console.error('Ошибка при добавлении в корзину:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.delete('/cart', async (req, res) => {
+    const { user_id, product_id } = req.body;
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM "TechStore"."cart" WHERE user_id = $1 AND product_id = $2 RETURNING *',
+            [user_id, product_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Товар не найден в корзине' });
+        }
+
+        res.status(200).json({ message: 'Товар удален из корзины', cartItem: result.rows[0] });
+    } catch (err) {
+        console.error('Ошибка при удалении из корзины:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.delete('/cart/clear', async (req, res) => {
+    const { user_id } = req.body;
+
+    try {
+        const result = await pool.query(
+            'DELETE FROM "TechStore"."cart" WHERE user_id = $1 RETURNING *',
+            [user_id]
+        );
+
+        res.status(200).json({ message: 'Корзина очищена', deletedItems: result.rows });
+    } catch (err) {
+        console.error('Ошибка при очистке корзины:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.get('/cart/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT c.*, p.product_name, p.price, p.product_image 
+             FROM "TechStore"."cart" c
+             JOIN "TechStore"."products" p ON c.product_id = p.product_id
+             WHERE c.user_id = $1`,
+            [user_id]
+        );
+
+        const cartItems = result.rows.map(row => ({
+            product: {
+                product_id: row.product_id,
+                product_name: row.product_name,
+                price: row.price,
+                product_image: row.product_image
+            },
+            quantity: row.quantity_of_products
+        }));
+
+        res.status(200).json(cartItems);
+    } catch (err) {
+        console.error('Ошибка при получении корзины:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.put('/cart', async (req, res) => {
+    const { user_id, product_id, quantity_of_products } = req.body;
+
+    try {
+        const result = await pool.query(
+            'UPDATE "TechStore"."cart" SET quantity_of_products = $1 WHERE user_id = $2 AND product_id = $3 RETURNING *',
+            [quantity_of_products, user_id, product_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Товар не найден в корзине' });
+        }
+
+        res.status(200).json({ message: 'Количество товара обновлено', cartItem: result.rows[0] });
+    } catch (err) {
+        console.error('Ошибка при обновлении количества товара:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });

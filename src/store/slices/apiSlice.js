@@ -48,6 +48,37 @@ export const apiSlice = createApi({
         getFavorites: builder.query({
             query: (user_id) => `/favorites/${user_id}`,
         }),
+        addToCart: builder.mutation({
+            query: (cartData) => ({
+                url: '/cart',
+                method: 'POST',
+                body: cartData,
+            }),
+        }),
+        removeFromCart: builder.mutation({
+            query: (cartData) => ({
+                url: '/cart',
+                method: 'DELETE',
+                body: cartData,
+            }),
+        }),
+        clearCart: builder.mutation({
+            query: (user_id) => ({
+                url: '/cart/clear',
+                method: 'DELETE',
+                body: { user_id },
+            }),
+        }),
+        updateCart: builder.mutation({
+            query: (cartData) => ({
+                url: '/cart',
+                method: 'PUT',
+                body: cartData,
+            }),
+        }),
+        getCart: builder.query({
+            query: (user_id) => `/cart/${user_id}`,
+        }),
     }),
 });
 
@@ -60,4 +91,9 @@ export const {
     useAddFavoriteMutation,
     useRemoveFavoriteMutation,
     useGetFavoritesQuery,
+    useAddToCartMutation,
+    useRemoveFromCartMutation,
+    useClearCartMutation,
+    useGetCartQuery,
+    useUpdateCartMutation,
 } = apiSlice;

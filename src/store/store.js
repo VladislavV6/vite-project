@@ -3,6 +3,7 @@ import { apiSlice } from './slices/apiSlice.js';
 import authReducer from './slices/authSlice.js';
 import searchReducer from './slices/searchSlice.js';
 import favoritesReducer from './slices/favoritesSlice';
+import cartReducer from './slices/cartSlice';
 
 export const store = configureStore({
     reducer: {
@@ -10,6 +11,7 @@ export const store = configureStore({
         auth: authReducer,
         search: searchReducer,
         favorites: favoritesReducer,
+        cart: cartReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(apiSlice.middleware),

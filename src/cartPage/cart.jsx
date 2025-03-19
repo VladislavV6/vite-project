@@ -1,6 +1,75 @@
-import "./style.css"
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { removeFromCart, clearCart, updateQuantity, setCart } from '../store/slices/cartSlice';
+import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery } from '../store/slices/apiSlice';
+import "./style.css";
 
 function CartPage() {
+    const dispatch = useDispatch();
+    const user = useSelector(state => state.auth.user);
+    const cartItems = useSelector(state => state.cart.items);
+    const [removeFromCartMutation] = useRemoveFromCartMutation();
+    const [clearCartMutation] = useClearCartMutation();
+    const [updateCartMutation] = useUpdateCartMutation();
+    const { data: cartData, refetch } = useGetCartQuery(user?.user_id);
+
+    useEffect(() => {
+        if (cartData) {
+            dispatch(setCart(cartData));
+        }
+    }, [cartData, dispatch]);
+
+    useEffect(() => {
+        if (user) {
+            refetch();
+        }
+    }, [user, refetch]);
+
+    const handleRemoveFromCart = async (productId) => {
+        if (!user) {
+            alert('Войдите в систему, чтобы управлять корзиной');
+            return;
+        }
+
+        try {
+            await removeFromCartMutation({ user_id: user.user_id, product_id: productId }).unwrap();
+            dispatch(removeFromCart(productId));
+        } catch (err) {
+            console.error('Ошибка при удалении из корзины:', err);
+        }
+    };
+
+    const handleClearCart = async () => {
+        if (!user) {
+            alert('Войдите в систему, чтобы управлять корзиной');
+            return;
+        }
+
+        try {
+            await clearCartMutation(user.user_id).unwrap();
+            dispatch(clearCart());
+        } catch (err) {
+            console.error('Ошибка при очистке корзины:', err);
+        }
+    };
+
+    const handleQuantityChange = async (productId, quantity) => {
+        if (!user) {
+            alert('Войдите в систему, чтобы управлять корзиной');
+            return;
+        }
+
+        if (quantity > 0) {
+            try {
+                await updateCartMutation({ user_id: user.user_id, product_id: productId, quantity_of_products: quantity }).unwrap();
+                dispatch(updateQuantity({ productId, quantity }));
+            } catch (err) {
+                console.error('Ошибка при обновлении количества:', err);
+            }
+        }
+    };
+
+    const totalPrice = cartItems.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
 
     return (
         <div>
@@ -10,20 +79,38 @@ function CartPage() {
             </header>
             <section className="cart">
                 <h2>Корзина</h2>
+                {cartItems.length > 0 ? (
                     <div>
                         <ul>
-                            <li>
-                                <div>
-                                    <h3>Товар</h3>
-                                    <p>Цена:</p>
-                                    <p>Количество:</p>
-                                    <button>Удалить</button>
-                                </div>
-                            </li>
+                            {cartItems.map((item) => (
+                                <li key={item.product.product_id}>
+                                    <div>
+                                        <h3>{item.product.product_name}</h3>
+                                        <p>Цена: ₽ {item.product.price}</p>
+                                        <p>
+                                            Количество:
+                                            <input
+                                                type="number"
+                                                value={item.quantity}
+                                                onChange={(e) => handleQuantityChange(item.product.product_id, parseInt(e.target.value))}
+                                                min="1"
+                                            />
+                                        </p>
+                                        <button onClick={() => handleRemoveFromCart(item.product.product_id)}>
+                                            Удалить
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
                         </ul>
-                        <p>Общая стоимость: </p>
-                        <button>Очистить корзину</button>
+                        <p className="total-price">Общая стоимость: ₽ {totalPrice}</p>
+                        <button className="clear-cart-button" onClick={handleClearCart}>
+                            Очистить корзину
+                        </button>
                     </div>
+                ) : (
+                    <p className="empty-cart-message">Ваша корзина пуста.</p>
+                )}
             </section>
             <footer>
                 <p>2025 Магазин Электроники</p>

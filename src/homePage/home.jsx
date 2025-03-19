@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchTerm, clearSearchTerm } from "../store/slices/searchSlice";
 import AddProductForm from './addproduct.jsx';
-import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation, useGetFavoritesQuery } from '../store/slices/apiSlice.js';
+import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation, useGetFavoritesQuery, useAddToCartMutation } from '../store/slices/apiSlice.js';
 import { setFavorites, addFavorite, removeFavorite } from '../store/slices/favoritesSlice';
+import { addToCart } from '../store/slices/cartSlice';
 import "./style.css";
 
 function HomePage() {
@@ -14,6 +15,7 @@ function HomePage() {
     const [showForm, setShowForm] = useState(false);
     const [addFavoriteMutation] = useAddFavoriteMutation();
     const [removeFavoriteMutation] = useRemoveFavoriteMutation();
+    const [addToCartMutation] = useAddToCartMutation();
     const favorites = useSelector(state => state.favorites.items);
     const { data: favoritesData } = useGetFavoritesQuery(user?.user_id);
 
@@ -55,8 +57,24 @@ function HomePage() {
         }
     };
 
-    const handleAddToCart = (productId) => {
-        console.log(`Товар с ID ${productId} добавлен в корзину`);
+    const handleAddToCart = async (product) => {
+        if (!user) {
+            alert('Войдите в систему, чтобы добавлять товары в корзину');
+            return;
+        }
+
+        try {
+            await addToCartMutation({
+                user_id: user.user_id,
+                product_id: product.product_id,
+                quantity_of_products: 1
+            }).unwrap();
+            dispatch(addToCart({ product, quantity: 1 }));
+            alert('Товар добавлен в корзину');
+        } catch (err) {
+            console.error('Ошибка при добавлении в корзину:', err);
+            alert('Ошибка при добавлении в корзину');
+        }
     };
 
     return (
@@ -116,7 +134,7 @@ function HomePage() {
                         </Link>
                         <p className="price">₽ {product.price}</p>
 
-                        <button className="add-to-cart" onClick={() => handleAddToCart(product.product_id)}>
+                        <button className="add-to-cart" onClick={() => handleAddToCart(product)}>
                             Добавить в корзину
                         </button>
                     </div>
