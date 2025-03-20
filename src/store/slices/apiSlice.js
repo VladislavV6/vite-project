@@ -79,6 +79,16 @@ export const apiSlice = createApi({
         getCart: builder.query({
             query: (user_id) => `/cart/${user_id}`,
         }),
+        createOrder: builder.mutation({
+            query: (orderData) => ({
+                url: '/orders',
+                method: 'POST',
+                body: orderData,
+            }),
+        }),
+        getOrders: builder.query({
+            query: (user_id) => `/orders/${user_id}`,
+        }),
     }),
 });
 
@@ -96,4 +106,6 @@ export const {
     useClearCartMutation,
     useGetCartQuery,
     useUpdateCartMutation,
+    useCreateOrderMutation,
+    useGetOrdersQuery,
 } = apiSlice;

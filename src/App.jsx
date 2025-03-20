@@ -8,6 +8,7 @@ import CartPage from "./cartPage/cart.jsx";
 import Navbar from "./Navbar.jsx";
 import ProductPage from "./productPage/product.jsx";
 import PurchaseHistory from "./historyPage/purchaceHistory.jsx";
+import OrdersPage from "./ordersPage/orders.jsx";
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { login } from './store/slices/authSlice';
@@ -34,6 +35,7 @@ function App() {
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/product/:productId" element={<ProductPage />} />
                 <Route path="/purchase-history" element={<PurchaseHistory />} />
+                <Route path="/orders" element={<OrdersPage />} />
             </Routes>
         </Router>
     );

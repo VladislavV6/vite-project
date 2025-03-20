@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, clearCart, updateQuantity, setCart } from '../store/slices/cartSlice';
-import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery } from '../store/slices/apiSlice';
+import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery, useCreateOrderMutation } from '../store/slices/apiSlice';
 import "./style.css";
 
 function CartPage() {
@@ -11,6 +11,7 @@ function CartPage() {
     const [removeFromCartMutation] = useRemoveFromCartMutation();
     const [clearCartMutation] = useClearCartMutation();
     const [updateCartMutation] = useUpdateCartMutation();
+    const [createOrderMutation] = useCreateOrderMutation();
     const { data: cartData, refetch } = useGetCartQuery(user?.user_id);
 
     useEffect(() => {
@@ -69,6 +70,39 @@ function CartPage() {
         }
     };
 
+    const handleCreateOrder = async () => {
+        if (!user) {
+            alert('Войдите в систему, чтобы оформить заказ');
+            return;
+        }
+
+        if (cartItems.length === 0) {
+            alert('Ваша корзина пуста');
+            return;
+        }
+
+        try {
+            const orderData = {
+                user_id: user.user_id,
+                order_amount: cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0),
+                items: cartItems.map(item => ({
+                    product_id: item.product.product_id,
+                    product_count: item.quantity,
+                })),
+            };
+
+            await createOrderMutation(orderData).unwrap();
+
+            await clearCartMutation(user.user_id).unwrap();
+            dispatch(clearCart());
+
+            alert('Заказ успешно оформлен!');
+        } catch (err) {
+            console.error('Ошибка при оформлении заказа:', err);
+            alert('Ошибка при оформлении заказа');
+        }
+    };
+
     const totalPrice = cartItems.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
 
     return (
@@ -106,6 +140,9 @@ function CartPage() {
                         <p className="total-price">Общая стоимость: ₽ {totalPrice}</p>
                         <button className="clear-cart-button" onClick={handleClearCart}>
                             Очистить корзину
+                        </button>
+                        <button className="create-order-button" onClick={handleCreateOrder}>
+                            Сделать заказ
                         </button>
                     </div>
                 ) : (

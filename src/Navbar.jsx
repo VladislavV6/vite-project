@@ -27,7 +27,7 @@ function Navbar() {
     <div className="nav-right">
         {isAuthenticated ? (
             <>
-                <span>{user.name}</span> {}
+                <span><Link to="/orders">{user.name}</Link></span> {}
                 <button onClick={handleLogout}>Выйти</button>
                 {}
             </>

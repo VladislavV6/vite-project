@@ -314,6 +314,66 @@ app.put('/cart', async (req, res) => {
     }
 });
 
+app.post('/orders', async (req, res) => {
+    const { user_id, order_amount, items } = req.body;
+
+    try {
+        await pool.query('BEGIN');
+
+        const orderResult = await pool.query(
+            `INSERT INTO "TechStore"."orders" (user_id, order_amount, date_of_order)
+             VALUES ($1, $2, CURRENT_DATE)
+             RETURNING *`,
+            [user_id, order_amount]
+        );
+
+        const orderId = orderResult.rows[0].order_id;
+
+        for (const item of items) {
+            await pool.query(
+                `INSERT INTO "TechStore"."order_composition" (order_id, product_id, product_count)
+                 VALUES ($1, $2, $3)`,
+                [orderId, item.product_id, item.product_count]
+            );
+        }
+
+        await pool.query('DELETE FROM "TechStore"."cart" WHERE user_id = $1', [user_id]);
+        await pool.query('COMMIT');
+
+        res.status(201).json({ message: 'Заказ успешно создан', order: orderResult.rows[0] });
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error('Ошибка при создании заказа:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.get('/orders/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const ordersResult = await pool.query(
+            `SELECT o.*, 
+                    json_agg(json_build_object(
+                        'product_id', oc.product_id,
+                        'product_count', oc.product_count,
+                        'price', p.price
+                    )) AS items
+             FROM "TechStore"."orders" o
+             LEFT JOIN "TechStore"."order_composition" oc ON o.order_id = oc.order_id
+             LEFT JOIN "TechStore"."products" p ON oc.product_id = p.product_id
+             WHERE o.user_id = $1
+             GROUP BY o.order_id`,
+            [user_id]
+        );
+
+        res.status(200).json(ordersResult.rows);
+    } catch (err) {
+        console.error('Ошибка при получении заказов:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });
