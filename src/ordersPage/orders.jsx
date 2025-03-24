@@ -7,7 +7,7 @@ import "./style.css";
 function OrdersPage() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.auth.user);
-    const orders = useSelector(state => state.orders.items)
+    const orders = useSelector(state => state.orders?.items || []);
     const { data: ordersData, isLoading, isError, error } = useGetOrdersQuery(user?.user_id);
 
     useEffect(() => {
@@ -15,6 +15,24 @@ function OrdersPage() {
             dispatch(setOrders(ordersData));
         }
     }, [ordersData, dispatch]);
+
+    if (!user) {
+        return (
+            <div>
+                <header>
+                    <h1>TechStore</h1>
+                    <p>Техника для дома и бизнеса</p>
+                </header>
+                <section className="orders">
+                    <p>Пожалуйста, войдите в систему для просмотра заказов</p>
+                </section>
+                <footer>
+                    <p>2025 Магазин Электроники</p>
+                    <p>Все права защищены</p>
+                </footer>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return <p>Загрузка заказов...</p>;

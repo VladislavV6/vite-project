@@ -89,6 +89,26 @@ export const apiSlice = createApi({
         getOrders: builder.query({
             query: (user_id) => `/orders/${user_id}`,
         }),
+        getAdminOrders: builder.query({
+            query: () => ({
+                url: '/orders/admin',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            }),
+            providesTags: ['AdminOrders']
+        }),
+        updateOrder: builder.mutation({
+            query: ({ orderId, status }) => ({
+                url: `/orders/${orderId}/status`,
+                method: 'PATCH',
+                body: { status },
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            }),
+            invalidatesTags: ['AdminOrders']
+        })
     }),
 });
 
@@ -108,4 +128,6 @@ export const {
     useUpdateCartMutation,
     useCreateOrderMutation,
     useGetOrdersQuery,
+    useGetAdminOrdersQuery,
+    useUpdateOrderMutation
 } = apiSlice;

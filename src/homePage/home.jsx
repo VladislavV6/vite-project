@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchTerm, clearSearchTerm } from "../store/slices/searchSlice";
-import AddProductForm from './addproduct.jsx';
+import AdminPanel from './adminpanel.jsx';
 import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation, useGetFavoritesQuery, useAddToCartMutation } from '../store/slices/apiSlice.js';
 import { setFavorites, addFavorite, removeFavorite } from '../store/slices/favoritesSlice';
 import { addToCart } from '../store/slices/cartSlice';
@@ -12,7 +12,6 @@ function HomePage() {
     const dispatch = useDispatch();
     const searchTerm = useSelector((state) => state.search.searchTerm);
     const user = useSelector(state => state.auth.user);
-    const [showForm, setShowForm] = useState(false);
     const [addFavoriteMutation] = useAddFavoriteMutation();
     const [removeFavoriteMutation] = useRemoveFavoriteMutation();
     const [addToCartMutation] = useAddToCartMutation();
@@ -77,6 +76,22 @@ function HomePage() {
         }
     };
 
+    if (user && Number(user.role_id) === 1) {
+        return (
+            <div>
+                <header>
+                    <h1>TechStore</h1>
+                    <p>Техника для дома и бизнеса</p>
+                </header>
+                <AdminPanel onProductAdded={refetch} />
+                <footer>
+                    <p>2025 Магазин Электроники</p>
+                    <p>Все права защищены</p>
+                </footer>
+            </div>
+        );
+    }
+
     return (
         <div>
             <header>
@@ -88,23 +103,6 @@ function HomePage() {
                 <h2>Лучшие предложения для вас!</h2>
                 <p>Все новинки и горячие скидки на электронику.</p>
             </section>
-
-            {user && (
-                <div style={{ border: '2px solid red', padding: '10px' }}>
-                    <pre>Role ID: {JSON.stringify(user.role_id)}</pre>
-                    {Number(user.role_id) === 1 && (
-                        <button onClick={() => setShowForm(true)}>Добавить товар</button>
-                    )}
-                </div>
-            )}
-
-            {showForm && user?.user_id && (
-                <AddProductForm
-                    onCancel={() => setShowForm(false)}
-                    userId={user.user_id}
-                    onProductAdded={refetch}
-                />
-            )}
 
             <div className="search-bar">
                 <input

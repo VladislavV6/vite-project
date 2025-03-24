@@ -348,11 +348,19 @@ app.post('/orders', async (req, res) => {
     }
 });
 
+
 app.get('/orders/:user_id', async (req, res) => {
     const { user_id } = req.params;
 
+    if (!user_id || isNaN(parseInt(user_id))) {
+        return res.status(400).json({
+            message: 'Неверный ID пользователяя',
+            error: `Получен user_id: ${user_id}`
+        });
+    }
+
     try {
-        const ordersResult = await pool.query(
+        const result = await pool.query(
             `SELECT o.*, 
                     json_agg(json_build_object(
                         'product_id', oc.product_id,
@@ -364,13 +372,86 @@ app.get('/orders/:user_id', async (req, res) => {
              LEFT JOIN "TechStore"."products" p ON oc.product_id = p.product_id
              WHERE o.user_id = $1
              GROUP BY o.order_id`,
-            [user_id]
+            [parseInt(user_id)]
         );
 
-        res.status(200).json(ordersResult.rows);
+        res.status(200).json(result.rows);
     } catch (err) {
-        console.error('Ошибка при получении заказов:', err);
-        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+        console.error('Ошибка SQL запроса:', {
+            query: `SELECT...WHERE user_id = ${user_id}`,
+            error: err
+        });
+        res.status(500).json({
+            message: 'Ошибка сервера',
+            error: err.message,
+            details: err.detail
+        });
+    }
+});
+
+app.get('/orders/admin', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ message: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, 'your_secret_key');
+        if (decoded.role_id !== 1) {
+            return res.status(403).json({ message: 'Требуются права администратора' });
+        }
+
+        const result = await pool.query(`
+            SELECT 
+                o.*,
+                json_agg(json_build_object(
+                    'product_id', oc.product_id,
+                    'product_count', oc.product_count,
+                    'price', p.price
+                )) AS items
+            FROM "TechStore"."orders" o
+            JOIN "TechStore"."order_composition" oc ON o.order_id = oc.order_id
+            JOIN "TechStore"."products" p ON oc.product_id = p.product_id
+            GROUP BY o.order_id
+            ORDER BY o.date_of_order DESC
+        `);
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Ошибка получения заказов:', err);
+        res.status(500).json({ message: 'Ошибка сервера' });
+    }
+});
+
+app.patch('/orders/:orderId/status', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
+        const token = req.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            return res.status(401).json({ message: 'Требуется авторизация' });
+        }
+
+        const decoded = jwt.verify(token, 'your_secret_key');
+        if (decoded.role_id !== 1) {
+            return res.status(403).json({ message: 'Требуются права администратора' });
+        }
+
+        const validStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ message: 'Неверный статус заказа' });
+        }
+
+        await pool.query(
+            'UPDATE "TechStore"."orders" SET status = $1 WHERE order_id = $2',
+            [status, orderId]
+        );
+
+        res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('Ошибка обновления:', err);
+        res.status(500).json({ message: 'Ошибка сервера' });
     }
 });
 
