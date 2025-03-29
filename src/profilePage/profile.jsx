@@ -74,7 +74,6 @@ function OrdersPage() {
             </header>
 
             <div className="profile-grid">
-                {/* Блок профиля */}
                 <section className="profile-card">
                     <div className="profile-avatar">
                         <div className="avatar-circle">
@@ -153,7 +152,6 @@ function OrdersPage() {
                     </div>
                 </section>
 
-                {/* Блок заказов */}
                 <section className="orders-card">
                     <h2 className="orders-title">
                         <i className="orders-icon">📦</i>

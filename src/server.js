@@ -537,6 +537,30 @@ app.put('/update-user', async (req, res) => {
     }
 });
 
+app.put('/products/:productId', async (req, res) => {
+    const { productId } = req.params;
+    const { product_name, category_id, price, product_description, product_image } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE "TechStore"."products" 
+       SET product_name = $1, category_id = $2, price = $3, 
+           product_description = $4, product_image = $5
+       WHERE product_id = $6 RETURNING *`,
+            [product_name, category_id, price, product_description, product_image, productId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Товар не найден' });
+        }
+
+        res.status(200).json({ message: 'Товар успешно обновлен', product: result.rows[0] });
+    } catch (err) {
+        console.error('Ошибка при обновлении товара:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });

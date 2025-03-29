@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchTerm, clearSearchTerm } from "../store/slices/searchSlice";
 import AddProductForm from './addproduct.jsx';
+import EditProductForm from './editproduct.jsx';
 import {
     useGetProductsQuery,
     useAddFavoriteMutation,
@@ -10,7 +11,8 @@ import {
     useGetFavoritesQuery,
     useAddToCartMutation,
     useDeleteProductMutation,
-    useGetCategoriesQuery
+    useGetCategoriesQuery,
+    useUpdateProductMutation
 } from '../store/slices/apiSlice.js';
 import { setFavorites, addFavorite, removeFavorite } from '../store/slices/favoritesSlice';
 import { addToCart } from '../store/slices/cartSlice';
@@ -22,10 +24,12 @@ function HomePage() {
     const user = useSelector(state => state.auth.user);
     const [showForm, setShowForm] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
+    const [editingProduct, setEditingProduct] = useState(null);
     const [addFavoriteMutation] = useAddFavoriteMutation();
     const [removeFavoriteMutation] = useRemoveFavoriteMutation();
     const [addToCartMutation] = useAddToCartMutation();
     const [deleteProduct] = useDeleteProductMutation();
+    const [updateProduct] = useUpdateProductMutation();
     const favorites = useSelector(state => state.favorites.items);
     const { data: favoritesData } = useGetFavoritesQuery(user?.user_id);
     const { data: categories = [] } = useGetCategoriesQuery();
@@ -99,6 +103,23 @@ function HomePage() {
         }
     };
 
+    const handleUpdateProduct = async (productId, updatedData) => {
+        try {
+            await updateProduct({
+                productId: productId,
+                productData: updatedData
+            }).unwrap();
+            refetch();
+            setEditingProduct(null);
+            alert('Товар успешно обновлен!');
+            return true;
+        } catch (err) {
+            console.error('Ошибка:', err);
+            alert('Ошибка при обновлении');
+            return false;
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="loading-container">
@@ -147,6 +168,22 @@ function HomePage() {
                                 </button>
                                 <button
                                     onClick={() => {
+                                        const productId = prompt('Введите ID товара для редактирования:');
+                                        if (productId) {
+                                            const productToEdit = products.find(p => p.product_id == productId);
+                                            if (productToEdit) {
+                                                setEditingProduct(productToEdit);
+                                            } else {
+                                                alert('Товар с таким ID не найден');
+                                            }
+                                        }
+                                    }}
+                                    className="admin-button edit-button"
+                                >
+                                    Редактировать товар
+                                </button>
+                                <button
+                                    onClick={() => {
                                         const productId = prompt('Введите ID товара для удаления:');
                                         if (productId) handleDeleteProduct(productId);
                                     }}
@@ -164,6 +201,19 @@ function HomePage() {
                         onCancel={() => setShowForm(false)}
                         userId={user.user_id}
                         onProductAdded={refetch}
+                    />
+                )}
+
+                {editingProduct && (
+                    <EditProductForm
+                        product={editingProduct}
+                        onCancel={() => setEditingProduct(null)}
+                        onSave={handleUpdateProduct}
+                        onProductUpdated={() => {
+                            refetch();
+                            setEditingProduct(null);
+                        }}
+                        categories={categories}
                     />
                 )}
 

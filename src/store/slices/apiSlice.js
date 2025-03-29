@@ -128,6 +128,13 @@ export const apiSlice = createApi({
                 body: userData,
             }),
         }),
+        updateProduct: builder.mutation({
+            query: ({ productId, productData }) => ({
+                url: `/products/${productId}`,
+                method: 'PUT',
+                body: productData,
+            }),
+        }),
     }),
 });
 
@@ -153,5 +160,6 @@ export const {
     useAddReviewMutation,
     useDeleteReviewMutation,
     useGetCategoriesQuery,
-    useUpdateUserMutation
+    useUpdateUserMutation,
+    useUpdateProductMutation,
 } = apiSlice;
