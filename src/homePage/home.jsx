@@ -1,9 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
 import { setSearchTerm, clearSearchTerm } from "../store/slices/searchSlice";
-import AdminPanel from './adminpanel.jsx';
-import { useGetProductsQuery, useAddFavoriteMutation, useRemoveFavoriteMutation, useGetFavoritesQuery, useAddToCartMutation } from '../store/slices/apiSlice.js';
+import AddProductForm from './addproduct.jsx';
+import {
+    useGetProductsQuery,
+    useAddFavoriteMutation,
+    useRemoveFavoriteMutation,
+    useGetFavoritesQuery,
+    useAddToCartMutation,
+    useDeleteProductMutation,
+    useGetCategoriesQuery
+} from '../store/slices/apiSlice.js';
 import { setFavorites, addFavorite, removeFavorite } from '../store/slices/favoritesSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import "./style.css";
@@ -12,13 +20,16 @@ function HomePage() {
     const dispatch = useDispatch();
     const searchTerm = useSelector((state) => state.search.searchTerm);
     const user = useSelector(state => state.auth.user);
+    const [showForm, setShowForm] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState(null);
     const [addFavoriteMutation] = useAddFavoriteMutation();
     const [removeFavoriteMutation] = useRemoveFavoriteMutation();
     const [addToCartMutation] = useAddToCartMutation();
+    const [deleteProduct] = useDeleteProductMutation();
     const favorites = useSelector(state => state.favorites.items);
     const { data: favoritesData } = useGetFavoritesQuery(user?.user_id);
-
-    const { data: products = [], refetch } = useGetProductsQuery();
+    const { data: categories = [] } = useGetCategoriesQuery();
+    const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
 
     useEffect(() => {
         if (favoritesData) {
@@ -26,9 +37,11 @@ function HomePage() {
         }
     }, [favoritesData, dispatch]);
 
-    const filteredProducts = products.filter(product =>
-        product.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProducts = products.filter(product => {
+        const matchesSearch = product.product_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = !selectedCategory || product.category_id == selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
 
     const handleFavorite = async (productId) => {
         if (!user) {
@@ -38,21 +51,17 @@ function HomePage() {
 
         try {
             const favoriteData = { user_id: user.user_id, product_id: productId };
-
             const isFavorite = favorites.includes(productId);
 
             if (isFavorite) {
                 await removeFavoriteMutation(favoriteData).unwrap();
                 dispatch(removeFavorite(productId));
-                alert('Товар удален из избранного');
             } else {
                 await addFavoriteMutation(favoriteData).unwrap();
                 dispatch(addFavorite(productId));
-                alert('Товар добавлен в избранное');
             }
         } catch (err) {
             console.error('Ошибка при работе с избранным:', err);
-            alert('Ошибка при работе с избранным');
         }
     };
 
@@ -76,72 +85,183 @@ function HomePage() {
         }
     };
 
-    if (user && Number(user.role_id) === 1) {
+    const handleDeleteProduct = async (productId) => {
+        if (!window.confirm('Вы уверены, что хотите удалить этот товар?')) {
+            return;
+        }
+
+        try {
+            await deleteProduct(productId).unwrap();
+            refetch();
+        } catch (err) {
+            console.error('Ошибка при удалении товара:', err);
+            alert('Ошибка при удалении товара');
+        }
+    };
+
+    if (isLoading) {
         return (
-            <div>
-                <header>
-                    <h1>TechStore</h1>
-                    <p>Техника для дома и бизнеса</p>
-                </header>
-                <AdminPanel onProductAdded={refetch} />
-                <footer>
-                    <p>2025 Магазин Электроники</p>
-                    <p>Все права защищены</p>
-                </footer>
+            <div className="loading-container">
+                <div className="loader"></div>
+                <p>Загружаем товары...</p>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="error-container">
+                <h2>Произошла ошибка</h2>
+                <p>Не удалось загрузить список товаров</p>
             </div>
         );
     }
 
     return (
-        <div>
-            <header>
-                <h1>TechStore</h1>
-                <p>Техника для дома и бизнеса</p>
+        <div className="home-page">
+            <header className="page-header">
+                <div className="header-content">
+                    <h1>TechStore</h1>
+                    <p>Техника для дома и бизнеса</p>
+                </div>
             </header>
 
-            <section className="hero">
-                <h2>Лучшие предложения для вас!</h2>
-                <p>Все новинки и горячие скидки на электронику.</p>
+            <section className="hero-section">
+                <div className="hero-content">
+                    <h2>Лучшие предложения для вас!</h2>
+                    <p>Все новинки и горячие скидки на электронику</p>
+                </div>
             </section>
 
-            <div className="search-bar">
-                <input
-                    type="text"
-                    placeholder="Поиск товаров..."
-                    value={searchTerm}
-                    onChange={(e) => dispatch(setSearchTerm(e.target.value))}
-                />
-                <button onClick={() => dispatch(clearSearchTerm())}>Очистить</button>
-            </div>
-
-            <section className="products">
-                {filteredProducts.map((product) => (
-                    <div key={product.product_id} className="product-card">
-                        <div
-                            className={`favorite-icon ${favorites.includes(product.product_id) ? 'active' : ''}`}
-                            onClick={() => handleFavorite(product.product_id)}
-                        >
-                            {favorites.includes(product.product_id) ? '❤️' : '♡'}
-                        </div>
-
-                        <Link to={`/product/${product.product_id}`}>
-                            <img src={product.product_image} alt={product.product_name} />
-                        </Link>
-                        <Link to={`/product/${product.product_id}`}>
-                            <h3>{product.product_name}</h3>
-                        </Link>
-                        <p className="price">₽ {product.price}</p>
-
-                        <button className="add-to-cart" onClick={() => handleAddToCart(product)}>
-                            Добавить в корзину
-                        </button>
+            <main className="main-content">
+                {user && (
+                    <div className="user-info-card">
+                        <p>Вы вошли как: <strong>{user.name}</strong> (Роль: {user.role_id === 1 ? 'Администратор' : 'Пользователь'})</p>
+                        {Number(user.role_id) === 1 && (
+                            <div className="admin-actions">
+                                <button
+                                    onClick={() => setShowForm(true)}
+                                    className="admin-button add-button"
+                                >
+                                    Добавить товар
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const productId = prompt('Введите ID товара для удаления:');
+                                        if (productId) handleDeleteProduct(productId);
+                                    }}
+                                    className="admin-button delete-button"
+                                >
+                                    Удалить товар
+                                </button>
+                            </div>
+                        )}
                     </div>
-                ))}
-            </section>
+                )}
 
-            <footer>
-                <p>2025 Магазин Электроники</p>
-                <p>Все права защищены</p>
+                {showForm && user?.user_id && (
+                    <AddProductForm
+                        onCancel={() => setShowForm(false)}
+                        userId={user.user_id}
+                        onProductAdded={refetch}
+                    />
+                )}
+
+                <div className="search-filter-container">
+                    <div className="search-bar">
+                        <input
+                            type="text"
+                            placeholder="Поиск товаров..."
+                            value={searchTerm}
+                            onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                        />
+                        {searchTerm && (
+                            <button
+                                onClick={() => dispatch(clearSearchTerm())}
+                                className="clear-search-button"
+                            >
+                                Очистить
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="category-filter">
+                        <select
+                            value={selectedCategory || ''}
+                            onChange={(e) => setSelectedCategory(e.target.value || null)}
+                        >
+                            <option value="">Все категории</option>
+                            {categories.map(category => (
+                                <option key={category.category_id} value={category.category_id}>
+                                    {category.category_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                <div className="products-grid">
+                    {filteredProducts.length > 0 ? (
+                        filteredProducts.map((product) => (
+                            <div key={product.product_id} className="product-card">
+                                <div
+                                    className={`favorite-icon ${favorites.includes(product.product_id) ? 'active' : ''}`}
+                                    onClick={() => handleFavorite(product.product_id)}
+                                    title={favorites.includes(product.product_id) ? 'Удалить из избранного' : 'Добавить в избранное'}
+                                >
+                                    {favorites.includes(product.product_id) ? '❤️' : '♡'}
+                                </div>
+
+                                <Link to={`/product/${product.product_id}`} className="product-link">
+                                    <div className="product-image-container" data-has-image={!!product.product_image}>
+                                        <img
+                                            src={product.product_image || '/placeholder-image.jpg'}
+                                            alt={product.product_name}
+                                            className="product-image"
+                                            onError={(e) => {
+                                                e.target.src = '/placeholder-image.jpg';
+                                                e.target.parentElement.setAttribute('data-has-image', 'false');
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="product-info">
+                                        <h3 className="product-title">{product.product_name}</h3>
+                                        <p className="product-price">₽ {product.price.toLocaleString()}</p>
+                                        {user?.role_id === 1 && (
+                                            <p className="product-id">ID: {product.product_id}</p>
+                                        )}
+                                    </div>
+                                </Link>
+
+                                <button
+                                    className="add-to-cart-button"
+                                    onClick={() => handleAddToCart(product)}
+                                >
+                                    Добавить в корзину
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="empty-products">
+                            <div className="empty-icon">🔍</div>
+                            <h2>Товары не найдены</h2>
+                            <p>Попробуйте изменить параметры поиска</p>
+                            <button
+                                onClick={() => {
+                                    dispatch(clearSearchTerm());
+                                    setSelectedCategory(null);
+                                }}
+                                className="reset-filters-button"
+                            >
+                                Сбросить фильтры
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </main>
+
+            <footer className="page-footer">
+                <p>© 2025 TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

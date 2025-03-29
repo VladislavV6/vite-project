@@ -3,6 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000' }),
+    tagTypes: ['Favorites'],
     endpoints: (builder) => ({
         registerUser: builder.mutation({
             query: (userData) => ({
@@ -37,6 +38,7 @@ export const apiSlice = createApi({
                 method: 'POST',
                 body: favoriteData,
             }),
+            invalidatesTags: ['Favorites'],
         }),
         removeFavorite: builder.mutation({
             query: (favoriteData) => ({
@@ -44,9 +46,11 @@ export const apiSlice = createApi({
                 method: 'DELETE',
                 body: favoriteData,
             }),
+            invalidatesTags: ['Favorites'],
         }),
         getFavorites: builder.query({
             query: (user_id) => `/favorites/${user_id}`,
+            providesTags: ['Favorites'],
         }),
         addToCart: builder.mutation({
             query: (cartData) => ({
@@ -89,26 +93,41 @@ export const apiSlice = createApi({
         getOrders: builder.query({
             query: (user_id) => `/orders/${user_id}`,
         }),
-        getAdminOrders: builder.query({
-            query: () => ({
-                url: '/orders/admin',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            }),
-            providesTags: ['AdminOrders']
+        getAllOrders: builder.query({
+            query: () => '/admin/orders',
         }),
-        updateOrder: builder.mutation({
-            query: ({ orderId, status }) => ({
-                url: `/orders/${orderId}/status`,
-                method: 'PATCH',
-                body: { status },
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
+        deleteProduct: builder.mutation({
+            query: (productId) => ({
+                url: `/products/${productId}`,
+                method: 'DELETE',
             }),
-            invalidatesTags: ['AdminOrders']
-        })
+        }),
+        getReviews: builder.query({
+            query: (productId) => `/reviews/${productId}`,
+        }),
+        addReview: builder.mutation({
+            query: (reviewData) => ({
+                url: '/reviews',
+                method: 'POST',
+                body: reviewData,
+            }),
+        }),
+        deleteReview: builder.mutation({
+            query: (reviewId) => ({
+                url: `/reviews/${reviewId}`,
+                method: 'DELETE',
+            }),
+        }),
+        getCategories: builder.query({
+            query: () => '/categories',
+        }),
+        updateUser: builder.mutation({
+            query: (userData) => ({
+                url: '/update-user',
+                method: 'PUT',
+                body: userData,
+            }),
+        }),
     }),
 });
 
@@ -128,6 +147,11 @@ export const {
     useUpdateCartMutation,
     useCreateOrderMutation,
     useGetOrdersQuery,
-    useGetAdminOrdersQuery,
-    useUpdateOrderMutation
+    useGetAllOrdersQuery,
+    useDeleteProductMutation,
+    useGetReviewsQuery,
+    useAddReviewMutation,
+    useDeleteReviewMutation,
+    useGetCategoriesQuery,
+    useUpdateUserMutation
 } = apiSlice;

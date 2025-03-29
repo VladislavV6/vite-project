@@ -1,49 +1,96 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { useGetFavoritesQuery } from '../store/slices/apiSlice';
+import { useGetFavoritesQuery, useRemoveFavoriteMutation } from '../store/slices/apiSlice';
+import { Link } from 'react-router-dom';
 import "./style.css";
 
 function FavoritesPage() {
     const user = useSelector(state => state.auth.user);
-    const favorites = useSelector(state => state.favorites.items);
-    const { data: favoritesData = [], isLoading, isError } = useGetFavoritesQuery(user?.user_id);
+    const { data: favorites = [], isLoading, isError } = useGetFavoritesQuery(user?.user_id);
+    const [removeFavorite] = useRemoveFavoriteMutation();
+
+    const handleRemoveFavorite = async (productId) => {
+        if (!window.confirm('Удалить товар из избранного?')) return;
+
+        try {
+            await removeFavorite({
+                user_id: user.user_id,
+                product_id: productId
+            }).unwrap();
+        } catch (err) {
+            console.error('Ошибка при удалении из избранного:', err);
+            alert('Не удалось удалить товар из избранного');
+        }
+    };
 
     if (isLoading) {
-        return <div>Загрузка...</div>;
+        return (
+            <div className="loading-container">
+                <div className="loader"></div>
+                <p>Загружаем ваши избранные товары...</p>
+            </div>
+        );
     }
 
     if (isError) {
-        return <div>Ошибка при загрузке избранного</div>;
+        return (
+            <div className="error-container">
+                <h2>Произошла ошибка</h2>
+                <p>Не удалось загрузить список избранных товаров</p>
+            </div>
+        );
     }
 
     return (
-        <div>
-            <header>
-                <h1>TechStore</h1>
-                <p>Техника для дома и бизнеса</p>
+        <div className="favorites-page">
+            <header className="page-header">
+                <div className="header-content">
+                    <h1>Избранное</h1>
+                    <p>Ваши любимые товары в одном месте</p>
+                </div>
             </header>
 
-            <section className="favorites">
-                <h2>Избранное</h2>
-                <div className="favorites-list">
-                    {favoritesData.length > 0 ? (
-                        favoritesData.map((item) => (
-                            <div key={item.product_id} className="favorite-item">
-                                <img src={item.product_image} alt={item.product_name} />
-                                <h3>{item.product_name}</h3>
-                                <p className="price">₽ {item.price}</p>
-                                <p>{favorites.includes(item.product_id) ? 'В избранном' : 'Не в избранном'}</p>
+            <main className="main-content">
+                {favorites.length > 0 ? (
+                    <div className="favorites-grid">
+                        {favorites.map((product) => (
+                            <div key={product.product_id} className="favorite-card">
+                                <Link to={`/product/${product.product_id}`} className="product-link">
+                                    <div className="product-image-container">
+                                        <img
+                                            src={product.product_image}
+                                            alt={product.product_name}
+                                            className="product-image"
+                                        />
+                                    </div>
+                                    <div className="product-info">
+                                        <h3 className="product-title">{product.product_name}</h3>
+                                        <p className="product-price">₽ {product.price.toLocaleString()}</p>
+                                    </div>
+                                </Link>
+                                <div className="product-actions">
+                                    <button
+                                        onClick={() => handleRemoveFavorite(product.product_id)}
+                                        className="remove-button"
+                                    >
+                                        Удалить из избранного
+                                    </button>
+                                </div>
                             </div>
-                        ))
-                    ) : (
-                        <p>В избранном пока ничего нет.</p>
-                    )}
-                </div>
-            </section>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="empty-favorites">
+                        <div className="empty-icon">❤️</div>
+                        <h2>Ваше избранное пусто</h2>
+                        <p>Добавляйте товары в избранное, нажимая на сердечко</p>
+                        <Link to="/" className="browse-button">Перейти к покупкам</Link>
+                    </div>
+                )}
+            </main>
 
-            <footer>
-                <p>2025 Магазин Электроники</p>
-                <p>Все права защищены</p>
+            <footer className="page-footer">
+                <p>© 2025 TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

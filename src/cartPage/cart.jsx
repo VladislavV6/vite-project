@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, clearCart, updateQuantity, setCart } from '../store/slices/cartSlice';
 import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery, useCreateOrderMutation } from '../store/slices/apiSlice';
+import { Link } from 'react-router-dom';
 import "./style.css";
 
 function CartPage() {
@@ -12,7 +13,7 @@ function CartPage() {
     const [clearCartMutation] = useClearCartMutation();
     const [updateCartMutation] = useUpdateCartMutation();
     const [createOrderMutation] = useCreateOrderMutation();
-    const { data: cartData, refetch } = useGetCartQuery(user?.user_id);
+    const { data: cartData, isLoading, isError, refetch } = useGetCartQuery(user?.user_id);
 
     useEffect(() => {
         if (cartData) {
@@ -32,11 +33,14 @@ function CartPage() {
             return;
         }
 
+        if (!window.confirm('Удалить товар из корзины?')) return;
+
         try {
             await removeFromCartMutation({ user_id: user.user_id, product_id: productId }).unwrap();
             dispatch(removeFromCart(productId));
         } catch (err) {
             console.error('Ошибка при удалении из корзины:', err);
+            alert('Не удалось удалить товар из корзины');
         }
     };
 
@@ -46,11 +50,14 @@ function CartPage() {
             return;
         }
 
+        if (!window.confirm('Очистить всю корзину?')) return;
+
         try {
             await clearCartMutation(user.user_id).unwrap();
             dispatch(clearCart());
         } catch (err) {
             console.error('Ошибка при очистке корзины:', err);
+            alert('Не удалось очистить корзину');
         }
     };
 
@@ -62,10 +69,15 @@ function CartPage() {
 
         if (quantity > 0) {
             try {
-                await updateCartMutation({ user_id: user.user_id, product_id: productId, quantity_of_products: quantity }).unwrap();
+                await updateCartMutation({
+                    user_id: user.user_id,
+                    product_id: productId,
+                    quantity_of_products: quantity
+                }).unwrap();
                 dispatch(updateQuantity({ productId, quantity }));
             } catch (err) {
                 console.error('Ошибка при обновлении количества:', err);
+                alert('Не удалось обновить количество товара');
             }
         }
     };
@@ -81,6 +93,8 @@ function CartPage() {
             return;
         }
 
+        if (!window.confirm('Оформить заказ?')) return;
+
         try {
             const orderData = {
                 user_id: user.user_id,
@@ -92,7 +106,6 @@ function CartPage() {
             };
 
             await createOrderMutation(orderData).unwrap();
-
             await clearCartMutation(user.user_id).unwrap();
             dispatch(clearCart());
 
@@ -105,53 +118,119 @@ function CartPage() {
 
     const totalPrice = cartItems.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
 
+    if (isLoading) {
+        return (
+            <div className="loading-container">
+                <div className="loader"></div>
+                <p>Загружаем вашу корзину...</p>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="error-container">
+                <h2>Произошла ошибка</h2>
+                <p>Не удалось загрузить содержимое корзины</p>
+            </div>
+        );
+    }
+
     return (
-        <div>
-            <header>
-                <h1>TechStore</h1>
-                <p>Техника для дома и бизнеса</p>
+        <div className="cart-page">
+            <header className="page-header">
+                <div className="header-content">
+                    <h1>Корзина</h1>
+                    <p>Ваши выбранные товары</p>
+                </div>
             </header>
-            <section className="cart">
-                <h2>Корзина</h2>
+
+            <main className="main-content">
                 {cartItems.length > 0 ? (
-                    <div>
-                        <ul>
+                    <div className="cart-container">
+                        <div className="cart-items">
                             {cartItems.map((item) => (
-                                <li key={item.product.product_id}>
-                                    <div>
-                                        <h3>{item.product.product_name}</h3>
-                                        <p>Цена: ₽ {item.product.price}</p>
-                                        <p>
-                                            Количество:
+                                <div key={item.product.product_id} className="cart-item">
+                                    <Link to={`/product/${item.product.product_id}`} className="product-link">
+                                        <div className="product-image-container">
+                                            <img
+                                                src={item.product.product_image}
+                                                alt={item.product.product_name}
+                                                className="product-image"
+                                            />
+                                        </div>
+                                    </Link>
+                                    <div className="product-details">
+                                        <h3 className="product-title">{item.product.product_name}</h3>
+                                        <p className="product-price">₽ {item.product.price.toLocaleString()}</p>
+                                        <div className="quantity-control">
+                                            <button
+                                                onClick={() => handleQuantityChange(item.product.product_id, item.quantity - 1)}
+                                                disabled={item.quantity <= 1}
+                                            >
+                                                -
+                                            </button>
                                             <input
                                                 type="number"
                                                 value={item.quantity}
-                                                onChange={(e) => handleQuantityChange(item.product.product_id, parseInt(e.target.value))}
+                                                onChange={(e) => handleQuantityChange(item.product.product_id, parseInt(e.target.value) || 1)}
                                                 min="1"
                                             />
-                                        </p>
-                                        <button onClick={() => handleRemoveFromCart(item.product.product_id)}>
-                                            Удалить
-                                        </button>
+                                            <button
+                                                onClick={() => handleQuantityChange(item.product.product_id, item.quantity + 1)}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
                                     </div>
-                                </li>
+                                    <button
+                                        onClick={() => handleRemoveFromCart(item.product.product_id)}
+                                        className="remove-button"
+                                    >
+                                        Удалить
+                                    </button>
+                                </div>
                             ))}
-                        </ul>
-                        <p className="total-price">Общая стоимость: ₽ {totalPrice}</p>
-                        <button className="clear-cart-button" onClick={handleClearCart}>
-                            Очистить корзину
-                        </button>
-                        <button className="create-order-button" onClick={handleCreateOrder}>
-                            Сделать заказ
-                        </button>
+                        </div>
+
+                        <div className="cart-summary">
+                            <div className="summary-card">
+                                <h3>Итого</h3>
+                                <div className="summary-row">
+                                    <span>Товары ({cartItems.reduce((total, item) => total + item.quantity, 0)})</span>
+                                    <span>₽ {totalPrice.toLocaleString()}</span>
+                                </div>
+                                <div className="summary-row total">
+                                    <span>Общая сумма</span>
+                                    <span>₽ {totalPrice.toLocaleString()}</span>
+                                </div>
+                                <button
+                                    className="checkout-button"
+                                    onClick={handleCreateOrder}
+                                >
+                                    Оформить заказ
+                                </button>
+                                <button
+                                    className="clear-cart-button"
+                                    onClick={handleClearCart}
+                                >
+                                    Очистить корзину
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 ) : (
-                    <p className="empty-cart-message">Ваша корзина пуста.</p>
+                    <div className="empty-cart">
+                        <div className="empty-icon">🛒</div>
+                        <h2>Ваша корзина пуста</h2>
+                        <p>Добавляйте товары в корзину, чтобы продолжить покупки</p>
+                        <Link to="/" className="browse-button">Перейти к покупкам</Link>
+                    </div>
                 )}
-            </section>
-            <footer>
-                <p>2025 Магазин Электроники</p>
-                <p>Все права защищены</p>
+            </main>
+
+            <footer className="page-footer">
+                <p>© 2025 TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

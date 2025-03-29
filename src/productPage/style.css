@@ -1,141 +1,302 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f8f8f8;
-}
-
-header {
-    background-color: #00b0f0;
-    color: #fff;
-    padding: 20px 10%;
-    text-align: center;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 2.5rem;
-}
-
-header p {
-    margin-top: 5px;
-    font-size: 1rem;
-}
-
-nav {
+/* Основные стили страницы товара */
+.product-page {
     display: flex;
-    justify-content: space-between;
-    background-color: #333;
-    padding: 15px 10%;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
-nav a {
-    color: #fff;
-    text-decoration: none;
-    margin: 0 20px;
-    font-size: 1.1rem;
+.product-header {
+    background-color: #00b0f0;
+    color: white;
+    padding: 1rem;
+    position: relative;
 }
 
-nav a:hover {
-    text-decoration: underline;
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.back-button {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.product-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.product-main {
+    flex: 1;
+    padding: 2rem 1rem;
 }
 
 .product-details {
     display: flex;
-    padding: 20px 10%;
-    gap: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 3rem;
 }
 
 .product-left {
     flex: 1;
-    text-align: center;
 }
 
-.product-left h2 {
-    font-size: 2rem;
-    margin-bottom: 20px;
-}
-
-.product-image img {
-    max-width: 100%;
-    height: auto;
+.product-image-container {
+    background: #fff;
     border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.product-image-container img {
+    width: 100%;
+    height: auto;
+    display: block;
 }
 
 .product-right {
     flex: 1;
 }
 
-.product-right .description {
-    font-size: 1.2rem;
-    color: #555;
+.product-description {
+    margin-bottom: 2rem;
+}
+
+.product-description h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.product-description p {
     line-height: 1.6;
+    color: #555;
 }
 
-.product-rating {
-    margin-top: 20px;
+.product-price-section {
+    margin-bottom: 2rem;
 }
 
-.product-rating p {
-    font-size: 1.2rem;
-    margin-bottom: 10px;
+.price {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #00b0f0;
 }
 
-.product-rating form {
+.reviews-section {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #eee;
+}
+
+.reviews-section h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.reviews-list {
+    margin-bottom: 2rem;
+}
+
+.review-item {
+    background-color: #f9f9f9;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.review-header {
     display: flex;
-    gap: 10px;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-.product-rating input[type="radio"] {
+.review-user {
+    font-weight: bold;
+    color: #333;
+}
+
+.review-date {
+    color: #777;
+    font-size: 0.9rem;
+}
+
+.review-rating {
+    color: #ffcc00;
+    font-size: 1.2rem;
+    margin-right: auto;
+}
+
+.review-comment {
+    margin: 0;
+    line-height: 1.6;
+    color: #444;
+}
+
+.no-reviews {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+
+.review-form {
+    background-color: #f0f0f0;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.review-form h4 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+}
+
+.rating-container {
+    margin-bottom: 1.5rem;
+}
+
+.stars {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.stars input[type="radio"] {
     display: none;
 }
 
-.product-rating label {
-    font-size: 1.5rem;
+.stars label {
+    font-size: 2rem;
     color: #ccc;
     cursor: pointer;
+    transition: color 0.2s;
 }
 
-.product-rating input[type="radio"]:checked ~ label {
+.stars input[type="radio"]:checked ~ label,
+.stars label:hover,
+.stars label:hover ~ label {
     color: #ffcc00;
 }
 
-.product-comment {
-    margin-top: 20px;
-}
-
-.product-comment textarea {
+.comment-container textarea {
     width: 100%;
-    padding: 10px;
+    padding: 1rem;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 6px;
     font-size: 1rem;
     resize: vertical;
+    margin-bottom: 1.5rem;
+    min-height: 120px;
 }
 
-button {
+.submit-review-btn {
     background-color: #00b0f0;
-    color: #fff;
+    color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 20px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
     font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
-button:hover {
-    background-color: #009cc0;
+.submit-review-btn:hover {
+    background-color: #0088cc;
 }
 
-footer {
+.submit-review-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.delete-review-btn {
+    padding: 0.5rem 1rem;
+    background-color: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.delete-review-btn:hover {
+    background-color: #cc0000;
+}
+
+.product-footer {
     background-color: #333;
-    color: #fff;
+    color: white;
     text-align: center;
-    padding: 20px 10%;
-    margin-top: 20px;
+    padding: 1.5rem;
+    margin-top: auto;
 }
 
-footer p {
-    margin: 5px 0;
+.loading-container,
+.error-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+    font-size: 1.2rem;
+}
+
+.error-container {
+    color: #ff4444;
+}
+
+@media (max-width: 768px) {
+    .product-details {
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .product-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .back-button {
+        margin-bottom: 0.5rem;
+    }
+}
+
+.add-to-cart-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 15px;
+    background-color: #00b0f0;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-to-cart-btn:hover {
+    background-color: #009cc0;
 }

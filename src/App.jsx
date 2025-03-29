@@ -8,7 +8,7 @@ import CartPage from "./cartPage/cart.jsx";
 import Navbar from "./Navbar.jsx";
 import ProductPage from "./productPage/product.jsx";
 import PurchaseHistory from "./historyPage/purchaceHistory.jsx";
-import OrdersPage from "./ordersPage/orders.jsx";
+import OrdersPage from "./profilePage/profile.jsx";
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { login } from './store/slices/authSlice';
