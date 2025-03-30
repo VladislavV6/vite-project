@@ -135,6 +135,16 @@ export const apiSlice = createApi({
                 body: productData,
             }),
         }),
+        getPurchaseHistory: builder.query({
+            query: (userId) => `/store_history/${userId}`,
+        }),
+        addToPurchaseHistory: builder.mutation({
+            query: (purchaseData) => ({
+                url: '/store_history',
+                method: 'POST',
+                body: purchaseData,
+            }),
+        }),
     }),
 });
 
@@ -162,4 +172,6 @@ export const {
     useGetCategoriesQuery,
     useUpdateUserMutation,
     useUpdateProductMutation,
+    useGetPurchaseHistoryQuery,
+    useAddToPurchaseHistoryMutation,
 } = apiSlice;

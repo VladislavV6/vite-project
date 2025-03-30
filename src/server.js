@@ -561,6 +561,43 @@ app.put('/products/:productId', async (req, res) => {
     }
 });
 
+app.get('/store_history/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT sh.*, p.product_name, p.price, p.product_image 
+       FROM "TechStore"."store_history" sh
+       JOIN "TechStore"."products" p ON sh.product_id = p.product_id
+       WHERE sh.user_id = $1
+       ORDER BY sh.data_of_purchase DESC`,
+            [user_id]
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Ошибка при получении истории:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.post('/store_history', async (req, res) => {
+    const { user_id, product_id } = req.body;
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO "TechStore"."store_history" 
+       (user_id, product_id, data_of_purchase)
+       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       RETURNING *`,
+            [user_id, product_id]
+        );
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Ошибка при добавлении в историю:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });

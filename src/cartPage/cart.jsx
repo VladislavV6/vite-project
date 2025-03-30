@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, clearCart, updateQuantity, setCart } from '../store/slices/cartSlice';
-import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery, useCreateOrderMutation } from '../store/slices/apiSlice';
+import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery, useCreateOrderMutation, useAddToPurchaseHistoryMutation} from '../store/slices/apiSlice';
 import { Link } from 'react-router-dom';
 import "./style.css";
 
@@ -13,6 +13,7 @@ function CartPage() {
     const [clearCartMutation] = useClearCartMutation();
     const [updateCartMutation] = useUpdateCartMutation();
     const [createOrderMutation] = useCreateOrderMutation();
+    const [addToPurchaseHistory] = useAddToPurchaseHistoryMutation();
     const { data: cartData, isLoading, isError, refetch } = useGetCartQuery(user?.user_id);
 
     useEffect(() => {
@@ -106,6 +107,16 @@ function CartPage() {
             };
 
             await createOrderMutation(orderData).unwrap();
+
+            await Promise.all(
+                cartItems.map(item =>
+                    addToPurchaseHistory({
+                        user_id: user.user_id,
+                        product_id: item.product.product_id
+                    }).unwrap()
+                )
+            );
+
             await clearCartMutation(user.user_id).unwrap();
             dispatch(clearCart());
 

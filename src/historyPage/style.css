@@ -1,44 +1,109 @@
-.purchase-history {
-    padding: 20px 10%;
+.purchase-history-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f8f9fa;
 }
 
-.purchase-history h2 {
-    font-size: 2rem;
-    margin-bottom: 20px;
-    text-align: center;
-}
-
-.purchase-history table {
+.history-container {
+    max-width: 1200px;
     width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
+    margin: 0 auto;
+    padding: 0 1rem;
 }
 
-.purchase-history th, .purchase-history td {
-    border: 1px solid #ddd;
-    padding: 12px;
-    text-align: left;
+.history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
 }
 
-.purchase-history th {
-    background-color: #00b0f0;
-    color: #fff;
+.history-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    transition: transform 0.3s ease;
 }
 
-.purchase-history tr:nth-child(even) {
-    background-color: #f8f8f8;
+.history-card:hover {
+    transform: translateY(-5px);
 }
 
-.purchase-history tr:hover {
-    background-color: #f1f1f1;
+.history-card .product-image-container {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-.purchase-history ul {
-    list-style-type: none;
-    padding: 0;
+.history-card .product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.history-card .product-info {
+    flex: 1;
+}
+
+.history-card .product-info h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.history-card .price {
+    font-weight: bold;
+    color: #00b0f0;
+    margin: 0 0 0.3rem 0;
+}
+
+.history-card .purchase-date {
+    font-size: 0.9rem;
+    color: #666;
     margin: 0;
 }
 
-.purchase-history ul li {
-    margin: 5px 0;
+.empty-history {
+    text-align: center;
+    padding: 4rem 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.empty-history .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+}
+
+.empty-history h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.empty-history p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.browse-button {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background-color: #00b0f0;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: background-color 0.2s;
+}
+
+.browse-button:hover {
+    background-color: #0088cc;
 }
