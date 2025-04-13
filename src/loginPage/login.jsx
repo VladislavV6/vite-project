@@ -36,79 +36,93 @@ function LoginPage() {
     };
 
     return (
-        <div>
-            <header>
+        <div className="login-page">
+            <header className="login-header">
                 <h1>TechStore</h1>
                 <p>Техника для дома и бизнеса</p>
             </header>
 
-            <section className="login-form">
-                <h2>Вход</h2>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                <form id="login-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="email">Email:</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="Введите ваш email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Пароль:</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="Введите пароль"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    {isAdminLogin && (
-                        <div className="form-group">
-                            <label htmlFor="adminPassword">Пароль администратора:</label>
+            <div className="login-container">
+                <div className="login-card">
+                    <h2 className="login-title">Вход</h2>
+                    {error && <div className="login-error">{error}</div>}
+                    <form className="login-form" onSubmit={handleSubmit}>
+                        <div className="login-form-group">
+                            <label htmlFor="email">Email:</label>
                             <input
-                                type="password"
-                                id="adminPassword"
-                                name="adminPassword"
-                                placeholder="Введите пароль администратора"
-                                value={adminPassword}
-                                onChange={(e) => setAdminPassword(e.target.value)}
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Введите ваш email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 required
                             />
                         </div>
-                    )}
+                        <div className="login-form-group">
+                            <label htmlFor="password">Пароль:</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Введите пароль"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
 
-                    <button type="submit">Войти</button>
-                </form>
+                        {isAdminLogin && (
+                            <div className="login-form-group">
+                                <label htmlFor="adminPassword">Пароль администратора:</label>
+                                <input
+                                    type="password"
+                                    id="adminPassword"
+                                    name="adminPassword"
+                                    placeholder="Введите пароль администратора"
+                                    value={adminPassword}
+                                    onChange={(e) => setAdminPassword(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        )}
 
-                <p>
-                    {isAdminLogin ? (
-                        <span>
-                            Войти как <a href="#" onClick={() => setIsAdminLogin(false)}>покупатель</a>
-                        </span>
-                    ) : (
-                        <span>
-                            Войти как <a href="#" onClick={() => setIsAdminLogin(true)}>администратор</a>
-                        </span>
-                    )}
-                </p>
+                        <button type="submit" className="login-submit-btn">
+                            Войти
+                        </button>
+                    </form>
 
-                <p>
-                    Нет аккаунта? <a href="/registration">Зарегистрируйтесь</a>
-                </p>
-            </section>
+                    <p className="login-toggle">
+                        {isAdminLogin ? (
+                            <span>
+                                Войти как <span
+                                className="login-toggle-link"
+                                onClick={() => setIsAdminLogin(false)}
+                            >
+                                    покупатель
+                                </span>
+                            </span>
+                        ) : (
+                            <span>
+                                Войти как <span
+                                className="login-toggle-link"
+                                onClick={() => setIsAdminLogin(true)}
+                            >
+                                    администратор
+                                </span>
+                            </span>
+                        )}
+                    </p>
 
-            <footer>
-                <p>2025 Магазин Электроники</p>
-                <p>Все права защищены</p>
+                    <p className="login-redirect">
+                        Нет аккаунта? <a href="/registration" className="login-register-link">Зарегистрируйтесь</a>
+                    </p>
+                </div>
+            </div>
+
+            <footer className="login-footer">
+                <p>© 2025 TechStore. Все права защищены.</p>
+                <p>Магазин электроники для дома и бизнеса</p>
             </footer>
         </div>
     );

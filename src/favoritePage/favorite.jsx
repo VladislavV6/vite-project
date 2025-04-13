@@ -6,7 +6,7 @@ import "./style.css";
 
 function FavoritesPage() {
     const user = useSelector(state => state.auth.user);
-    const { data: favorites = [], isLoading, isError } = useGetFavoritesQuery(user?.user_id);
+    const { data: favorites = [], isLoading, isError, refetch } = useGetFavoritesQuery(user?.user_id);
     const [removeFavorite] = useRemoveFavoriteMutation();
 
     const handleRemoveFavorite = async (productId) => {
@@ -17,6 +17,7 @@ function FavoritesPage() {
                 user_id: user.user_id,
                 product_id: productId
             }).unwrap();
+            refetch();
         } catch (err) {
             console.error('Ошибка при удалении из избранного:', err);
             alert('Не удалось удалить товар из избранного');
@@ -37,60 +38,67 @@ function FavoritesPage() {
             <div className="error-container">
                 <h2>Произошла ошибка</h2>
                 <p>Не удалось загрузить список избранных товаров</p>
+                <button onClick={refetch} className="retry-button">Попробовать снова</button>
             </div>
         );
     }
 
     return (
         <div className="favorites-page">
-            <header className="page-header">
+            <header className="favorites-header">
                 <div className="header-content">
-                    <h1>Избранное</h1>
-                    <p>Ваши любимые товары в одном месте</p>
+                    <h1 className="favorites-title">Избранное</h1>
+                    <p className="favorites-subtitle">Ваши любимые товары в одном месте</p>
+                    {favorites.length > 0 && (
+                        <div className="favorites-count">{favorites.length} товар{favorites.length > 1 ? 'а' : ''}</div>
+                    )}
                 </div>
             </header>
 
-            <main className="main-content">
+            <main className="favorites-main">
                 {favorites.length > 0 ? (
                     <div className="favorites-grid">
                         {favorites.map((product) => (
-                            <div key={product.product_id} className="favorite-card">
-                                <Link to={`/product/${product.product_id}`} className="product-link">
-                                    <div className="product-image-container">
+                            <div key={product.product_id} className="favorite-item">
+                                <div
+                                    className="favorite-remove"
+                                    onClick={() => handleRemoveFavorite(product.product_id)}
+                                    title="Удалить из избранного"
+                                >
+                                    &times;
+                                </div>
+
+                                <Link to={`/product/${product.product_id}`} className="favorite-link">
+                                    <div className="favorite-image-container">
                                         <img
-                                            src={product.product_image}
+                                            src={product.product_image || '/placeholder-image.jpg'}
                                             alt={product.product_name}
-                                            className="product-image"
+                                            className="favorite-image"
+                                            onError={(e) => {
+                                                e.target.src = '/placeholder-image.jpg';
+                                            }}
                                         />
                                     </div>
-                                    <div className="product-info">
-                                        <h3 className="product-title">{product.product_name}</h3>
-                                        <p className="product-price">₽ {product.price.toLocaleString()}</p>
+                                    <div className="favorite-details">
+                                        <h3 className="favorite-name">{product.product_name}</h3>
+                                        <p className="favorite-price">{product.price.toLocaleString()} ₽</p>
                                     </div>
                                 </Link>
-                                <div className="product-actions">
-                                    <button
-                                        onClick={() => handleRemoveFavorite(product.product_id)}
-                                        className="remove-button"
-                                    >
-                                        Удалить из избранного
-                                    </button>
-                                </div>
                             </div>
                         ))}
                     </div>
                 ) : (
-                    <div className="empty-favorites">
+                    <div className="favorites-empty">
                         <div className="empty-icon">❤️</div>
-                        <h2>Ваше избранное пусто</h2>
-                        <p>Добавляйте товары в избранное, нажимая на сердечко</p>
-                        <Link to="/" className="browse-button">Перейти к покупкам</Link>
+                        <h2 className="empty-title">Ваше избранное пусто</h2>
+                        <p className="empty-text">Добавляйте товары в избранное, нажимая на сердечко</p>
+                        <Link to="/" className="empty-button">Перейти к покупкам</Link>
                     </div>
                 )}
             </main>
 
-            <footer className="page-footer">
-                <p>© 2025 TechStore. Все права защищены.</p>
+            <footer className="favorites-footer">
+                <p>© {new Date().getFullYear()} TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

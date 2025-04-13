@@ -1,12 +1,29 @@
+:root {
+    --primary: #3a86ff;
+    --secondary: #8338ec;
+    --text-dark: #2b2d42;
+    --text-light: #8d99ae;
+    --background: #f8f9fa;
+    --white: #ffffff;
+    --shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 .home-container {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     position: relative;
-    overflow: hidden;
-    background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
+    overflow-x: hidden;
+    background: var(--background);
+    padding: 2rem;
 }
 
 .particles {
@@ -15,55 +32,93 @@
     height: 100%;
     top: 0;
     left: 0;
+    z-index: 0;
 }
 
 .particle {
     position: absolute;
-    width: 8px;
-    height: 8px;
-    background: #00b0f0;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
     border-radius: 50%;
     filter: blur(1px);
+    will-change: transform, opacity;
 }
 
 .hero-section {
     text-align: center;
     padding: 2rem;
-    z-index: 1;
-    max-width: 800px;
+    z-index: 2;
+    max-width: 1000px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
 }
 
 .logo {
-    width: 150px;
-    height: 150px;
-    margin-bottom: 2rem;
+    width: 180px;
+    height: 180px;
+    margin-bottom: 2.5rem;
     cursor: pointer;
+    transition: all 0.3s ease;
+    object-fit: contain;
+}
+
+.hero-text {
+    margin-bottom: 3rem;
 }
 
 h1 {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: #333;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: 1.5rem;
+    color: var(--text-dark);
+    font-weight: 800;
+    line-height: 1.2;
 }
 
-p {
-    font-size: 1.5rem;
-    color: #666;
-    margin-bottom: 2rem;
+.highlight {
+    color: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+    color: var(--text-light);
+    margin-bottom: 3rem;
+    font-weight: 400;
+}
+
+.button-container {
+    position: relative;
+    margin-top: 2rem;
 }
 
 .cta-button {
-    display: inline-block;
-    padding: 1rem 2rem;
+    display: inline-flex;
+    padding: 1.2rem 2.5rem;
     font-size: 1.2rem;
-    font-weight: bold;
+    font-weight: 600;
     text-decoration: none;
     position: relative;
     overflow: hidden;
-    border: 2px solid #00b0f0;
+    border: 2px solid var(--primary);
     border-radius: 50px;
-    margin-top: 2rem;
+    background: transparent;
+    cursor: pointer;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.button-text {
+    position: relative;
+    z-index: 2;
+    transition: color 0.3s ease;
 }
 
 .button-bg {
@@ -71,34 +126,76 @@ p {
     top: 0;
     left: 0;
     height: 100%;
-    background: #00b0f0;
-    z-index: -1;
+    z-index: 1;
+    border-radius: 50px;
+    will-change: width;
+}
+
+.features-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 5rem auto;
+    padding: 0 2rem;
+    z-index: 2;
+}
+
+.section-title {
+    text-align: center;
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    margin-bottom: 3rem;
+    color: var(--text-dark);
+    font-weight: 700;
 }
 
 .features {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2.5rem;
     justify-content: center;
-    gap: 2rem;
-    margin-top: 4rem;
-    flex-wrap: wrap;
 }
 
 .feature-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 16px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-    width: 250px;
+    background: var(--white);
+    padding: 2.5rem 2rem;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
     cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
 }
 
 .feature-card h3 {
     font-size: 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.2rem;
+    color: var(--text-dark);
+    font-weight: 600;
 }
 
 .feature-card p {
-    font-size: 1rem;
-    margin-bottom: 0;
-    color: #666;
+    font-size: 1.1rem;
+    color: var(--text-light);
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        min-height: 70vh;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+    }
+
+    .cta-button {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+    }
 }

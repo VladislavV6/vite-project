@@ -1,3 +1,4 @@
+// catalog.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from "react-redux";
@@ -66,6 +67,7 @@ function CatalogPage() {
             }
         } catch (err) {
             console.error('Ошибка при работе с избранным:', err);
+            alert('Произошла ошибка при обновлении избранного');
         }
     };
 
@@ -85,7 +87,7 @@ function CatalogPage() {
             alert('Товар добавлен в корзину');
         } catch (err) {
             console.error('Ошибка при добавлении в корзину:', err);
-            alert('Ошибка при добавлении в корзину');
+            alert('Произошла ошибка при добавлении в корзину');
         }
     };
 
@@ -97,9 +99,10 @@ function CatalogPage() {
         try {
             await deleteProduct(productId).unwrap();
             refetch();
+            alert('Товар успешно удален');
         } catch (err) {
             console.error('Ошибка при удалении товара:', err);
-            alert('Ошибка при удалении товара');
+            alert('Произошла ошибка при удалении товара');
         }
     };
 
@@ -115,14 +118,14 @@ function CatalogPage() {
             return true;
         } catch (err) {
             console.error('Ошибка:', err);
-            alert('Ошибка при обновлении');
+            alert(`Ошибка при обновлении: ${err.data?.message || err.message}`);
             return false;
         }
     };
 
     if (isLoading) {
         return (
-            <div className="loading-container">
+            <div className="loading-container" data-testid="loading-indicator">
                 <div className="loader"></div>
                 <p>Загружаем товары...</p>
             </div>
@@ -131,40 +134,47 @@ function CatalogPage() {
 
     if (isError) {
         return (
-            <div className="error-container">
+            <div className="error-container" data-testid="error-message">
                 <h2>Произошла ошибка</h2>
                 <p>Не удалось загрузить список товаров</p>
+                <button onClick={refetch} className="retry-button">
+                    Попробовать снова
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="home-page">
-            <header className="page-header">
+        <div className="catalog-page" data-testid="catalog-page">
+            <header className="catalog-header">
                 <div className="header-content">
-                    <h1>TechStore</h1>
-                    <p>Техника для дома и бизнеса</p>
+                    <h1 className="catalog-title">TechStore</h1>
+                    <p className="catalog-subtitle">Техника для дома и бизнеса</p>
                 </div>
             </header>
 
-            <section className="hero-section">
-                <div className="hero-content">
+            <section className="hero-banner" aria-label="Рекламный баннер">
+                <div className="banner-content">
                     <h2>Лучшие предложения для вас!</h2>
                     <p>Все новинки и горячие скидки на электронику</p>
                 </div>
             </section>
 
-            <main className="main-content">
+            <main className="catalog-main">
                 {user && (
-                    <div className="user-info-card">
-                        <p>Вы вошли как: <strong>{user.name}</strong> (Роль: {user.role_id === 1 ? 'Администратор' : 'Пользователь'})</p>
+                    <div className="user-panel" data-testid="user-panel">
+                        <div className="user-info">
+                            <span className="user-name">{user.name}</span>
+                            <span className="user-role">{user.role_id === 1 ? 'Администратор' : 'Пользователь'}</span>
+                        </div>
                         {Number(user.role_id) === 1 && (
-                            <div className="admin-actions">
+                            <div className="admin-panel">
                                 <button
                                     onClick={() => setShowForm(true)}
-                                    className="admin-button add-button"
+                                    className="admin-btn add-btn"
+                                    aria-label="Добавить товар"
                                 >
-                                    Добавить товар
+                                    <span>+</span> Добавить товар
                                 </button>
                                 <button
                                     onClick={() => {
@@ -178,18 +188,20 @@ function CatalogPage() {
                                             }
                                         }
                                     }}
-                                    className="admin-button edit-button"
+                                    className="admin-btn edit-btn"
+                                    aria-label="Редактировать товар"
                                 >
-                                    Редактировать товар
+                                    ✏️ Редактировать
                                 </button>
                                 <button
                                     onClick={() => {
                                         const productId = prompt('Введите ID товара для удаления:');
                                         if (productId) handleDeleteProduct(productId);
                                     }}
-                                    className="admin-button delete-button"
+                                    className="admin-btn delete-btn"
+                                    aria-label="Удалить товар"
                                 >
-                                    Удалить товар
+                                    🗑️ Удалить
                                 </button>
                             </div>
                         )}
@@ -217,28 +229,33 @@ function CatalogPage() {
                     />
                 )}
 
-                <div className="search-filter-container">
-                    <div className="search-bar">
+                <div className="filter-panel">
+                    <div className="search-box">
                         <input
                             type="text"
                             placeholder="Поиск товаров..."
                             value={searchTerm}
                             onChange={(e) => dispatch(setSearchTerm(e.target.value))}
+                            className="search-input"
+                            aria-label="Поиск товаров"
                         />
                         {searchTerm && (
                             <button
                                 onClick={() => dispatch(clearSearchTerm())}
-                                className="clear-search-button"
+                                className="clear-search"
+                                aria-label="Очистить поиск"
                             >
-                                Очистить
+                                &times;
                             </button>
                         )}
                     </div>
 
-                    <div className="category-filter">
+                    <div className="category-selector">
                         <select
                             value={selectedCategory || ''}
                             onChange={(e) => setSelectedCategory(e.target.value || null)}
+                            className="category-select"
+                            aria-label="Фильтр по категориям"
                         >
                             <option value="">Все категории</option>
                             {categories.map(category => (
@@ -250,33 +267,34 @@ function CatalogPage() {
                     </div>
                 </div>
 
-                <div className="products-grid">
+                <div className="products-container">
                     {filteredProducts.length > 0 ? (
                         filteredProducts.map((product) => (
-                            <div key={product.product_id} className="product-card">
-                                <div
-                                    className={`favorite-icon ${favorites.includes(product.product_id) ? 'active' : ''}`}
+                            <div key={product.product_id} className="product-item" data-testid={`product-${product.product_id}`}>
+                                <button
+                                    className={`favorite-btn ${favorites.includes(product.product_id) ? 'active' : ''}`}
                                     onClick={() => handleFavorite(product.product_id)}
                                     title={favorites.includes(product.product_id) ? 'Удалить из избранного' : 'Добавить в избранное'}
+                                    aria-label={favorites.includes(product.product_id) ? 'Удалить из избранного' : 'Добавить в избранное'}
                                 >
                                     {favorites.includes(product.product_id) ? '❤️' : '♡'}
-                                </div>
+                                </button>
 
-                                <Link to={`/product/${product.product_id}`} className="product-link">
-                                    <div className="product-image-container" data-has-image={!!product.product_image}>
+                                <Link to={`/product/${product.product_id}`} className="product-link" aria-label={`Подробнее о ${product.product_name}`}>
+                                    <div className="product-image-wrapper">
                                         <img
                                             src={product.product_image || '/placeholder-image.jpg'}
                                             alt={product.product_name}
-                                            className="product-image"
+                                            className="product-img"
                                             onError={(e) => {
                                                 e.target.src = '/placeholder-image.jpg';
-                                                e.target.parentElement.setAttribute('data-has-image', 'false');
                                             }}
+                                            loading="lazy"
                                         />
                                     </div>
-                                    <div className="product-info">
-                                        <h3 className="product-title">{product.product_name}</h3>
-                                        <p className="product-price">₽ {product.price.toLocaleString()}</p>
+                                    <div className="product-details">
+                                        <h3 className="product-name">{product.product_name}</h3>
+                                        <p className="product-price">{product.price.toLocaleString()} ₽</p>
                                         {user?.role_id === 1 && (
                                             <p className="product-id">ID: {product.product_id}</p>
                                         )}
@@ -284,24 +302,25 @@ function CatalogPage() {
                                 </Link>
 
                                 <button
-                                    className="add-to-cart-button"
+                                    className="cart-btn"
                                     onClick={() => handleAddToCart(product)}
+                                    aria-label={`Добавить ${product.product_name} в корзину`}
                                 >
-                                    Добавить в корзину
+                                    В корзину
                                 </button>
                             </div>
                         ))
                     ) : (
-                        <div className="empty-products">
+                        <div className="empty-state" data-testid="empty-state">
                             <div className="empty-icon">🔍</div>
-                            <h2>Товары не найдены</h2>
+                            <h3>Товары не найдены</h3>
                             <p>Попробуйте изменить параметры поиска</p>
                             <button
                                 onClick={() => {
                                     dispatch(clearSearchTerm());
                                     setSelectedCategory(null);
                                 }}
-                                className="reset-filters-button"
+                                className="reset-btn"
                             >
                                 Сбросить фильтры
                             </button>
@@ -310,8 +329,8 @@ function CatalogPage() {
                 </div>
             </main>
 
-            <footer className="page-footer">
-                <p>© 2025 TechStore. Все права защищены.</p>
+            <footer className="catalog-footer">
+                <p>© {new Date().getFullYear()} TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

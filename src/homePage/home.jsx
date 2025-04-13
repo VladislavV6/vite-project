@@ -16,23 +16,25 @@ function HomePage() {
     return (
         <div className="home-container">
             <div className="particles">
-                {[...Array(20)].map((_, i) => (
+                {[...Array(30)].map((_, i) => (
                     <motion.div
                         key={i}
                         className="particle"
                         initial={{
                             x: Math.random() * 100,
                             y: Math.random() * 100,
-                            opacity: 0
+                            opacity: 0,
+                            scale: Math.random() * 0.5 + 0.5
                         }}
                         animate={{
                             x: Math.random() * 100,
                             y: Math.random() * 100,
-                            opacity: [0, 0.5, 0],
+                            opacity: [0, 0.7, 0],
                             transition: {
-                                duration: 5 + Math.random() * 10,
+                                duration: 5 + Math.random() * 15,
                                 repeat: Infinity,
-                                repeatType: "reverse"
+                                repeatType: "reverse",
+                                ease: "easeInOut"
                             }
                         }}
                     />
@@ -47,8 +49,8 @@ function HomePage() {
             >
                 <motion.div
                     animate={{
-                        y: scrollY * 0.5,
-                        scale: 1 - scrollY * 0.001
+                        y: scrollY * 0.3,
+                        scale: 1 - scrollY * 0.0005
                     }}
                     style={{ originX: 0.5 }}
                 >
@@ -56,75 +58,102 @@ function HomePage() {
                         src="/logo.png"
                         alt="TechStore Logo"
                         className="logo"
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 1 }}
+                        whileHover={{ rotate: 360, scale: 1.1 }}
+                        transition={{ duration: 0.8, type: "spring" }}
                     />
                 </motion.div>
 
-                <motion.h1
-                    initial={{ y: 50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.3, duration: 0.8 }}
-                >
-                    Добро пожаловать в TechStore
-                </motion.h1>
+                <motion.div className="hero-text">
+                    <motion.h1
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3, duration: 0.8 }}
+                    >
+                        Добро пожаловать в <span className="highlight">TechStore</span>
+                    </motion.h1>
 
-                <motion.p
-                    initial={{ y: 50, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                >
-                    Техника будущего уже сегодня
-                </motion.p>
+                    <motion.p
+                        initial={{ y: 50, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.5, duration: 0.8 }}
+                        className="subtitle"
+                    >
+                        Техника будущего уже сегодня
+                    </motion.p>
+                </motion.div>
 
                 <motion.div
                     onHoverStart={() => setHovered(true)}
                     onHoverEnd={() => setHovered(false)}
                     whileTap={{ scale: 0.95 }}
+                    className="button-container"
                 >
                     <Link to="/catalog" className="cta-button">
                         <motion.span
                             animate={{
-                                color: hovered ? '#ffffff' : '#00b0f0'
+                                color: hovered ? '#ffffff' : '#3a86ff'
                             }}
+                            className="button-text"
                         >
                             Перейти в каталог
                         </motion.span>
                         <motion.div
                             className="button-bg"
                             animate={{
-                                width: hovered ? '100%' : '0%'
+                                width: hovered ? '100%' : '0%',
+                                backgroundColor: hovered ? '#3a86ff' : '#8338ec'
                             }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.4, ease: "easeInOut" }}
                         />
                     </Link>
                 </motion.div>
             </motion.div>
 
-            <div className="features">
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10 }}
+            <div className="features-container">
+                <motion.h2
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.7 }}
+                    className="section-title"
                 >
-                    <h3>🚀 Быстрая доставка</h3>
-                    <p>Получите заказ уже на следующий день</p>
-                </motion.div>
+                    Почему выбирают нас
+                </motion.h2>
 
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10 }}
-                >
-                    <h3>🔒 Гарантия качества</h3>
-                    <p>Все товары проходят проверку</p>
-                </motion.div>
-
-                <motion.div
-                    className="feature-card"
-                    whileHover={{ y: -10 }}
-                >
-                    <h3>💎 Эксклюзивные модели</h3>
-                    <p>Только у нас уникальные устройства</p>
-                </motion.div>
+                <div className="features">
+                    {[
+                        {
+                            icon: "🚀",
+                            title: "Быстрая доставка",
+                            description: "Получите заказ уже на следующий день"
+                        },
+                        {
+                            icon: "🔒",
+                            title: "Гарантия качества",
+                            description: "Все товары проходят тщательную проверку"
+                        },
+                        {
+                            icon: "💎",
+                            title: "Эксклюзивные модели",
+                            description: "Только у нас уникальные устройства"
+                        }
+                    ].map((feature, index) => (
+                        <motion.div
+                            key={index}
+                            className="feature-card"
+                            initial={{ y: 50, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
+                            whileHover={{
+                                y: -10,
+                                boxShadow: "0 15px 30px rgba(0, 0, 0, 0.1)"
+                            }}
+                        >
+                            <div className="feature-icon">{feature.icon}</div>
+                            <h3>{feature.title}</h3>
+                            <p>{feature.description}</p>
+                        </motion.div>
+                    ))}
+                </div>
             </div>
         </div>
     );

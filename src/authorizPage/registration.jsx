@@ -31,76 +31,82 @@ function RegistrationPage() {
     };
 
     return (
-        <div>
-            <header>
+        <div className="registration-page">
+            <header className="registration-header">
                 <h1>TechStore</h1>
                 <p>Техника для дома и бизнеса</p>
             </header>
 
-            <section className="registration-form">
-                <h2>Регистрация</h2>
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-                <form id="registration-form" onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="name">Имя:</label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            placeholder="Введите ваше имя"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="email">Email:</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            placeholder="Введите ваш email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="password">Пароль:</label>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="Введите пароль"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="confirm-password">Подтвердите пароль:</label>
-                        <input
-                            type="password"
-                            id="confirm-password"
-                            name="confirm-password"
-                            placeholder="Подтвердите пароль"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
-                    </div>
-                    <button type="submit" disabled={isLoading}>
-                        {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
-                    </button>
-                </form>
-                <p>
-                    Уже есть аккаунт? <a href="/login">Войдите</a>
-                </p>
-            </section>
+            <div className="registration-container">
+                <div className="registration-card">
+                    <h2 className="registration-title">Регистрация</h2>
+                    {error && <div className="registration-error">{error}</div>}
+                    <form className="registration-form" onSubmit={handleSubmit}>
+                        <div className="form-group">
+                            <label htmlFor="name">Имя:</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                placeholder="Введите ваше имя"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="email">Email:</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Введите ваш email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="password">Пароль:</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Введите пароль"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="confirm-password">Подтвердите пароль:</label>
+                            <input
+                                type="password"
+                                id="confirm-password"
+                                name="confirm-password"
+                                placeholder="Подтвердите пароль"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            className="submit-btn"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+                        </button>
+                    </form>
+                    <p className="login-redirect">
+                        Уже есть аккаунт? <a href="/login" className="login-link">Войдите</a>
+                    </p>
+                </div>
+            </div>
 
-            <footer>
-                <p>2025 Магазин Электроники</p>
-                <p>Все права защищены</p>
+            <footer className="registration-footer">
+                <p>© 2025 TechStore. Все права защищены.</p>
+                <p>Магазин электроники для дома и бизнеса</p>
             </footer>
         </div>
     );
