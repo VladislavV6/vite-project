@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useGetOrdersQuery, useGetAllOrdersQuery, useUpdateUserMutation } from '../store/slices/apiSlice';
+import { useGetOrdersQuery, useGetAllOrdersQuery, useUpdateUserMutation, useGetProductsQuery } from '../store/slices/apiSlice';
 import { setOrders } from '../store/slices/ordersSlice';
 import { setUser } from '../store/slices/authSlice';
 import "./style.css";
@@ -14,7 +14,11 @@ function OrdersPage() {
         skip: user?.role_id !== 1
     });
     const [updateUser] = useUpdateUserMutation();
-
+    const { data: products } = useGetProductsQuery(); // Добавьте этот запрос
+    const getProductName = (productId) => {
+        const product = products?.find(p => p.product_id === productId);
+        return product?.product_name || `Товар #${productId}`;
+    };
     const [editMode, setEditMode] = useState(false);
     const [name, setName] = useState(user?.name || '');
     const [password, setPassword] = useState('');
@@ -181,16 +185,18 @@ function OrdersPage() {
                                             {order.items.map((item, index) => (
                                                 <div key={index} className="order-item">
                                                     <span className="item-name">
-                                                        {item.product_name || `Товар #${item.product_id}`}
+                                                        {getProductName(item.product_id)}
                                                     </span>
                                                     <span className="item-quantity">{item.product_count} шт.</span>
-                                                    <span className="item-price">₽{item.price * item.product_count}</span>
+                                                    <span
+                                                        className="item-price">₽{item.price * item.product_count}</span>
                                                 </div>
                                             ))}
                                         </div>
                                         <div className="order-total">
                                             <span>Итого:</span>
-                                            <span className="total-amount">₽{order.order_amount}</span>
+                                            <span
+                                                className="total-amount">₽{order.order_amount || order.items.reduce((sum, item) => sum + (item.price || item.product?.price || 0) * item.product_count, 0)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -198,13 +204,8 @@ function OrdersPage() {
                         </div>
                     ) : (
                         <div className="no-orders">
-                            <img src="/empty-orders.svg" alt="Нет заказов" className="no-orders-img" />
+                            <img src="/empty-orders.svg" alt="Нет заказов" className="no-orders-img"/>
                             <p>{user?.role_id === 1 ? 'В системе пока нет заказов' : 'У вас еще нет заказов'}</p>
-                            {user?.role_id !== 1 && (
-                                <Link to="/" className="browse-btn">
-                                    Перейти к покупкам
-                                </Link>
-                            )}
                         </div>
                     )}
                 </section>

@@ -8,7 +8,10 @@ import "./style.css";
 function CartPage() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.auth.user);
-    const cartItems = useSelector(state => state.cart.items);
+    const cartItems = useSelector(state => state.cart.items.map(item => ({
+        ...item,
+        image: item.image || item.product.product_image
+    })));
     const [removeFromCartMutation] = useRemoveFromCartMutation();
     const [clearCartMutation] = useClearCartMutation();
     const [updateCartMutation] = useUpdateCartMutation();
@@ -128,6 +131,7 @@ function CartPage() {
     };
 
     const totalPrice = cartItems.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
+    const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
 
     if (isLoading) {
         return (
@@ -143,86 +147,106 @@ function CartPage() {
             <div className="error-container">
                 <h2>Произошла ошибка</h2>
                 <p>Не удалось загрузить содержимое корзины</p>
+                <button onClick={refetch} className="retry-button">Попробовать снова</button>
             </div>
         );
     }
 
     return (
         <div className="cart-page">
-            <header className="page-header">
+            <header className="cart-header">
                 <div className="header-content">
-                    <h1>Корзина</h1>
-                    <p>Ваши выбранные товары</p>
+                    <h1 className="cart-title">Ваша корзина</h1>
+                    <p className="cart-subtitle">{totalItems} товар(ов) на сумму ₽{totalPrice.toLocaleString()}</p>
                 </div>
             </header>
 
-            <main className="main-content">
+            <main className="cart-main">
                 {cartItems.length > 0 ? (
-                    <div className="cart-container">
-                        <div className="cart-items">
+                    <div className="cart-layout">
+                        <div className="cart-products">
                             {cartItems.map((item) => (
-                                <div key={item.product.product_id} className="cart-item">
-                                    <Link to={`/product/${item.product.product_id}`} className="product-link">
-                                        <div className="product-image-container">
+                                <div key={item.product.product_id} className="cart-product-item">
+                                    <div className="product-image-wrapper">
+                                        <Link to={`/product/${item.product.product_id}`}>
                                             <img
-                                                src={item.product.product_image}
+                                                src={item.savedImage || item.product.product_image}
                                                 alt={item.product.product_name}
                                                 className="product-image"
+                                                onError={(e) => {
+                                                    e.target.src = '/placeholder-image.jpg';
+                                                    e.target.style.objectFit = 'cover';
+                                                }}
                                             />
+                                        </Link>
+                                    </div>
+                                    <div className="product-info">
+                                        <div className="product-info-header">
+                                            <Link to={`/product/${item.product.product_id}`} className="product-name">
+                                                {item.product.product_name}
+                                            </Link>
+                                            <button
+                                                onClick={() => handleRemoveFromCart(item.product.product_id)}
+                                                className="remove-btn"
+                                                aria-label="Удалить товар"
+                                            >
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                     stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
                                         </div>
-                                    </Link>
-                                    <div className="product-details">
-                                        <h3 className="product-title">{item.product.product_name}</h3>
-                                        <p className="product-price">₽ {item.product.price.toLocaleString()}</p>
-                                        <div className="quantity-control">
-                                            <button
-                                                onClick={() => handleQuantityChange(item.product.product_id, item.quantity - 1)}
-                                                disabled={item.quantity <= 1}
-                                            >
-                                                -
-                                            </button>
-                                            <input
-                                                type="number"
-                                                value={item.quantity}
-                                                onChange={(e) => handleQuantityChange(item.product.product_id, parseInt(e.target.value) || 1)}
-                                                min="1"
-                                            />
-                                            <button
-                                                onClick={() => handleQuantityChange(item.product.product_id, item.quantity + 1)}
-                                            >
-                                                +
-                                            </button>
+                                        <div className="product-price">₽ {item.product.price.toLocaleString()}</div>
+                                        <div className="product-controls">
+                                            <div className="quantity-controls">
+                                                <button
+                                                    onClick={() => handleQuantityChange(item.product.product_id, item.quantity - 1)}
+                                                    disabled={item.quantity <= 1}
+                                                    aria-label="Уменьшить количество"
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="quantity-value">{item.quantity}</span>
+                                                <button
+                                                    onClick={() => handleQuantityChange(item.product.product_id, item.quantity + 1)}
+                                                    aria-label="Увеличить количество"
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <div className="item-total">
+                                                ₽ {(item.product.price * item.quantity).toLocaleString()}
+                                            </div>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={() => handleRemoveFromCart(item.product.product_id)}
-                                        className="remove-button"
-                                    >
-                                        Удалить
-                                    </button>
                                 </div>
                             ))}
                         </div>
 
                         <div className="cart-summary">
                             <div className="summary-card">
-                                <h3>Итого</h3>
+                                <h3>Итог заказа</h3>
                                 <div className="summary-row">
-                                    <span>Товары ({cartItems.reduce((total, item) => total + item.quantity, 0)})</span>
+                                    <span>Товары ({totalItems})</span>
                                     <span>₽ {totalPrice.toLocaleString()}</span>
                                 </div>
-                                <div className="summary-row total">
+                                <div className="summary-row">
+                                    <span>Доставка</span>
+                                    <span>Бесплатно</span>
+                                </div>
+                                <div className="summary-total">
                                     <span>Общая сумма</span>
                                     <span>₽ {totalPrice.toLocaleString()}</span>
                                 </div>
                                 <button
-                                    className="checkout-button"
+                                    className="checkout-btn"
                                     onClick={handleCreateOrder}
                                 >
                                     Оформить заказ
                                 </button>
                                 <button
-                                    className="clear-cart-button"
+                                    className="clear-cart-btn"
                                     onClick={handleClearCart}
                                 >
                                     Очистить корзину
@@ -234,14 +258,14 @@ function CartPage() {
                     <div className="empty-cart">
                         <div className="empty-icon">🛒</div>
                         <h2>Ваша корзина пуста</h2>
-                        <p>Добавляйте товары в корзину, чтобы продолжить покупки</p>
-                        <Link to="/" className="browse-button">Перейти к покупкам</Link>
+                        <p>Начните с главной страницы, чтобы добавить товары</p>
+                        <Link to="/" className="browse-btn">Перейти к покупкам</Link>
                     </div>
                 )}
             </main>
 
-            <footer className="page-footer">
-                <p>© 2025 TechStore. Все права защищены.</p>
+            <footer className="cart-footer">
+                <p>© {new Date().getFullYear()} TechStore. Все права защищены.</p>
             </footer>
         </div>
     );

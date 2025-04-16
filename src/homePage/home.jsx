@@ -47,22 +47,6 @@ function HomePage() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1 }}
             >
-                <motion.div
-                    animate={{
-                        y: scrollY * 0.3,
-                        scale: 1 - scrollY * 0.0005
-                    }}
-                    style={{ originX: 0.5 }}
-                >
-                    <motion.img
-                        src="/logo.png"
-                        alt="TechStore Logo"
-                        className="logo"
-                        whileHover={{ rotate: 360, scale: 1.1 }}
-                        transition={{ duration: 0.8, type: "spring" }}
-                    />
-                </motion.div>
-
                 <motion.div className="hero-text">
                     <motion.h1
                         initial={{ y: 50, opacity: 0 }}

@@ -9,18 +9,22 @@
 .profile-header {
     text-align: center;
     margin-bottom: 30px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid #eaeaea;
+    padding: 30px 20px;
+    background: linear-gradient(135deg, #6e45e2 0%, #88d3ce 100%);
+    color: white;
+    border-radius: 12px;
 }
 
 .profile-header h1 {
-    color: #2c3e50;
-    margin-bottom: 5px;
+    color: white;
+    margin-bottom: 10px;
+    font-size: 2.2rem;
 }
 
 .profile-header p {
-    color: #7f8c8d;
-    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    margin: 0;
 }
 
 .profile-grid {

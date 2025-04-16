@@ -335,6 +335,13 @@ app.post('/orders', async (req, res) => {
                  VALUES ($1, $2, $3)`,
                 [orderId, item.product_id, item.product_count]
             );
+
+            await pool.query(
+                `INSERT INTO "TechStore"."store_history" 
+                 (user_id, product_id, data_of_purchase, history_product_count)
+                 VALUES ($1, $2, CURRENT_TIMESTAMP, $3)`,
+                [user_id, item.product_id, item.product_count]
+            );
         }
 
         await pool.query('DELETE FROM "TechStore"."cart" WHERE user_id = $1', [user_id]);
@@ -566,14 +573,27 @@ app.get('/store_history/:user_id', async (req, res) => {
 
     try {
         const result = await pool.query(
-            `SELECT sh.*, p.product_name, p.price, p.product_image 
-       FROM "TechStore"."store_history" sh
-       JOIN "TechStore"."products" p ON sh.product_id = p.product_id
-       WHERE sh.user_id = $1
-       ORDER BY sh.data_of_purchase DESC`,
+            `SELECT 
+                sh.product_id,
+                MAX(p.product_name) as product_name,
+                MAX(p.price) as price,
+                MAX(p.product_image) as product_image,
+                SUM(sh.history_product_count) as history_product_count,
+                MAX(sh.data_of_purchase) as data_of_purchase
+             FROM "TechStore"."store_history" sh
+             JOIN "TechStore"."products" p ON sh.product_id = p.product_id
+             WHERE sh.user_id = $1
+             GROUP BY sh.product_id
+             ORDER BY MAX(sh.data_of_purchase) DESC`,
             [user_id]
         );
-        res.status(200).json(result.rows);
+
+        const historyWithTotals = result.rows.map(item => ({
+            ...item,
+            total_price: item.price * item.history_product_count
+        }));
+
+        res.status(200).json(historyWithTotals);
     } catch (err) {
         console.error('Ошибка при получении истории:', err);
         res.status(500).json({ message: 'Ошибка сервера', error: err.message });
