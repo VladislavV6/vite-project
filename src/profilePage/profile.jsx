@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useGetOrdersQuery, useGetAllOrdersQuery, useUpdateUserMutation, useGetProductsQuery } from '../store/slices/apiSlice';
+import { useGetOrdersQuery, useGetAllOrdersQuery, useUpdateUserMutation, useGetProductsQuery, useDeleteOrderMutation } from '../store/slices/apiSlice';
 import { setOrders } from '../store/slices/ordersSlice';
 import { setUser } from '../store/slices/authSlice';
 import "./style.css";
@@ -9,12 +9,13 @@ function OrdersPage() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.auth.user);
     const orders = useSelector(state => state.orders.items);
-    const { data: ordersData, isLoading, isError, error } = useGetOrdersQuery(user?.user_id);
-    const { data: allOrdersData } = useGetAllOrdersQuery(undefined, {
+    const { data: ordersData, isLoading, isError, error, refetch: refetchUserOrders } = useGetOrdersQuery(user?.user_id);
+    const { data: allOrdersData, refetch: refetchAllOrders } = useGetAllOrdersQuery(undefined, {
         skip: user?.role_id !== 1
     });
+    const [deleteOrder] = useDeleteOrderMutation();
     const [updateUser] = useUpdateUserMutation();
-    const { data: products } = useGetProductsQuery(); // Добавьте этот запрос
+    const { data: products } = useGetProductsQuery();
     const getProductName = (productId) => {
         const product = products?.find(p => p.product_id === productId);
         return product?.product_name || `Товар #${productId}`;
@@ -59,6 +60,25 @@ function OrdersPage() {
         } catch (err) {
             console.error('Ошибка при обновлении данных:', err);
             setUpdateError(err.data?.message || 'Ошибка при обновлении данных');
+        }
+    };
+
+    const handleDeleteOrder = async (orderId) => {
+        if (!window.confirm('Вы уверены, что хотите удалить этот заказ?')) return;
+
+        try {
+            await deleteOrder(orderId).unwrap();
+            if (user?.role_id === 1) {
+                const { data } = await refetchAllOrders();
+                dispatch(setOrders(data));
+            } else {
+                const { data } = await refetchUserOrders();
+                dispatch(setOrders(data));
+            }
+            alert('Заказ успешно удален');
+        } catch (err) {
+            console.error('Ошибка при удалении заказа:', err);
+            alert('Не удалось удалить заказ');
         }
     };
 
@@ -177,11 +197,18 @@ function OrdersPage() {
                                         <div className="order-customer">
                                             <span>{order.user_name}</span>
                                             <span>{order.user_email}</span>
+                                            <button
+                                                onClick={() => handleDeleteOrder(order.order_id)}
+                                                className="delete-order-btn"
+                                            >
+                                                Удалить заказ
+                                            </button>
                                         </div>
+
                                     )}
 
                                     <div className="order-summary">
-                                        <div className="order-items">
+                                    <div className="order-items">
                                             {order.items.map((item, index) => (
                                                 <div key={index} className="order-item">
                                                     <span className="item-name">

@@ -56,16 +56,16 @@ function PurchaseHistoryPage() {
                                         <h3 className="ph-product-name">{item.product_name}</h3>
                                         <div className="ph-meta">
                                             <p className="ph-price">₽{item.price.toLocaleString('ru-RU')}</p>
-                                            <p className="ph-quantity">{item.history_product_count || 1} шт.</p>
+                                            <p className="ph-quantity">{item.history_product_count} шт.</p>
                                         </div>
                                         <div className="ph-meta">
-                                            <p className="ph-total-price">Сумма: ₽{(item.total_price || item.price).toLocaleString('ru-RU')}</p>
+                                            <p className="ph-total-price">Сумма: ₽{(item.price * item.history_product_count).toLocaleString('ru-RU')}</p>
                                         </div>
                                         <p className="ph-date">
                                             {new Date(item.data_of_purchase).toLocaleDateString('ru-RU', {
                                                 year: 'numeric',
                                                 month: 'long',
-                                                day: 'numeric'
+                                                day: 'numeric',
                                             })}
                                         </p>
                                         <Link

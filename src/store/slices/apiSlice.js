@@ -95,6 +95,7 @@ export const apiSlice = createApi({
         }),
         getAllOrders: builder.query({
             query: () => '/admin/orders',
+            providesTags: ['Orders'],
         }),
         deleteProduct: builder.mutation({
             query: (productId) => ({
@@ -145,6 +146,13 @@ export const apiSlice = createApi({
                 body: purchaseData,
             }),
         }),
+        deleteOrder: builder.mutation({
+            query: (orderId) => ({
+                url: `/admin/orders/${orderId}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['Orders'],
+        }),
     }),
 });
 
@@ -174,4 +182,5 @@ export const {
     useUpdateProductMutation,
     useGetPurchaseHistoryQuery,
     useAddToPurchaseHistoryMutation,
+    useDeleteOrderMutation,
 } = apiSlice;

@@ -298,19 +298,30 @@ app.put('/cart', async (req, res) => {
     const { user_id, product_id, quantity_of_products } = req.body;
 
     try {
+        const quantity = Number(quantity_of_products);
+        if (isNaN(quantity)) {
+            return res.status(400).json({ message: 'Некорректное количество товара' });
+        }
+
         const result = await pool.query(
             'UPDATE "TechStore"."cart" SET quantity_of_products = $1 WHERE user_id = $2 AND product_id = $3 RETURNING *',
-            [quantity_of_products, user_id, product_id]
+            [quantity, user_id, product_id]
         );
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Товар не найден в корзине' });
         }
 
-        res.status(200).json({ message: 'Количество товара обновлено', cartItem: result.rows[0] });
+        res.status(200).json({
+            message: 'Количество товара обновлено',
+            cartItem: result.rows[0]
+        });
     } catch (err) {
-        console.error('Ошибка при обновлении количества товара:', err);
-        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+        console.error('Ошибка при обновлении количества:', err);
+        res.status(500).json({
+            message: 'Ошибка сервера',
+            error: err.message
+        });
     }
 });
 
@@ -334,13 +345,6 @@ app.post('/orders', async (req, res) => {
                 `INSERT INTO "TechStore"."order_composition" (order_id, product_id, product_count)
                  VALUES ($1, $2, $3)`,
                 [orderId, item.product_id, item.product_count]
-            );
-
-            await pool.query(
-                `INSERT INTO "TechStore"."store_history" 
-                 (user_id, product_id, data_of_purchase, history_product_count)
-                 VALUES ($1, $2, CURRENT_TIMESTAMP, $3)`,
-                [user_id, item.product_id, item.product_count]
             );
         }
 
@@ -574,26 +578,22 @@ app.get('/store_history/:user_id', async (req, res) => {
     try {
         const result = await pool.query(
             `SELECT 
+                sh.store_history_id,
                 sh.product_id,
-                MAX(p.product_name) as product_name,
-                MAX(p.price) as price,
-                MAX(p.product_image) as product_image,
-                SUM(sh.history_product_count) as history_product_count,
-                MAX(sh.data_of_purchase) as data_of_purchase
+                p.product_name,
+                p.price,
+                p.product_image,
+                sh.history_product_count,
+                sh.data_of_purchase,
+                (p.price * sh.history_product_count) as total_price
              FROM "TechStore"."store_history" sh
              JOIN "TechStore"."products" p ON sh.product_id = p.product_id
              WHERE sh.user_id = $1
-             GROUP BY sh.product_id
-             ORDER BY MAX(sh.data_of_purchase) DESC`,
+             ORDER BY sh.data_of_purchase DESC`,
             [user_id]
         );
 
-        const historyWithTotals = result.rows.map(item => ({
-            ...item,
-            total_price: item.price * item.history_product_count
-        }));
-
-        res.status(200).json(historyWithTotals);
+        res.status(200).json(result.rows);
     } catch (err) {
         console.error('Ошибка при получении истории:', err);
         res.status(500).json({ message: 'Ошибка сервера', error: err.message });
@@ -601,19 +601,49 @@ app.get('/store_history/:user_id', async (req, res) => {
 });
 
 app.post('/store_history', async (req, res) => {
-    const { user_id, product_id } = req.body;
+    const { user_id, product_id, history_product_count } = req.body;
 
     try {
         const result = await pool.query(
             `INSERT INTO "TechStore"."store_history" 
-       (user_id, product_id, data_of_purchase)
-       VALUES ($1, $2, CURRENT_TIMESTAMP)
+       (user_id, product_id, data_of_purchase, history_product_count)
+       VALUES ($1, $2, CURRENT_TIMESTAMP, $3)
        RETURNING *`,
-            [user_id, product_id]
+            [user_id, product_id, history_product_count || 1]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Ошибка при добавлении в историю:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.delete('/admin/orders/:orderId', async (req, res) => {
+    try {
+        const { orderId } = req.params;
+
+        await pool.query('BEGIN');
+
+        await pool.query(
+            'DELETE FROM "TechStore"."order_composition" WHERE order_id = $1',
+            [orderId]
+        );
+
+        const result = await pool.query(
+            'DELETE FROM "TechStore"."orders" WHERE order_id = $1 RETURNING *',
+            [orderId]
+        );
+
+        if (result.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ message: 'Заказ не найден' });
+        }
+
+        await pool.query('COMMIT');
+        res.status(200).json({ message: 'Заказ успешно удален', order: result.rows[0] });
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error('Ошибка при удалении заказа:', err);
         res.status(500).json({ message: 'Ошибка сервера', error: err.message });
     }
 });

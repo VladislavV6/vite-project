@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeFromCart, clearCart, updateQuantity, setCart } from '../store/slices/cartSlice';
 import { useRemoveFromCartMutation, useClearCartMutation, useUpdateCartMutation, useGetCartQuery, useCreateOrderMutation, useAddToPurchaseHistoryMutation} from '../store/slices/apiSlice';
@@ -8,6 +8,7 @@ import "./style.css";
 function CartPage() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.auth.user);
+    const [isUpdating, setIsUpdating] = useState({});
     const cartItems = useSelector(state => state.cart.items.map(item => ({
         ...item,
         image: item.image || item.product.product_image
@@ -65,24 +66,32 @@ function CartPage() {
         }
     };
 
-    const handleQuantityChange = async (productId, quantity) => {
-        if (!user) {
-            alert('Войдите в систему, чтобы управлять корзиной');
-            return;
-        }
+    const handleQuantityChange = async (productId, change) => {
+        if (!user || isUpdating[productId]) return;
 
-        if (quantity > 0) {
-            try {
-                await updateCartMutation({
-                    user_id: user.user_id,
-                    product_id: productId,
-                    quantity_of_products: quantity
-                }).unwrap();
-                dispatch(updateQuantity({ productId, quantity }));
-            } catch (err) {
-                console.error('Ошибка при обновлении количества:', err);
-                alert('Не удалось обновить количество товара');
-            }
+        const currentItem = cartItems.find(item => item.product.product_id === productId);
+        if (!currentItem) return;
+
+        const currentQuantity = Number(currentItem.quantity);
+        const newQuantity = currentQuantity + change;
+
+        if (newQuantity < 1) return;
+
+        setIsUpdating(prev => ({ ...prev, [productId]: true }));
+
+        try {
+            await updateCartMutation({
+                user_id: user.user_id,
+                product_id: productId,
+                quantity_of_products: newQuantity
+            }).unwrap();
+
+            dispatch(updateQuantity({ productId, quantity: newQuantity }));
+        } catch (err) {
+            console.error('Ошибка при обновлении количества:', err);
+            alert('Не удалось обновить количество товара');
+        } finally {
+            setIsUpdating(prev => ({ ...prev, [productId]: false }));
         }
     };
 
@@ -115,7 +124,8 @@ function CartPage() {
                 cartItems.map(item =>
                     addToPurchaseHistory({
                         user_id: user.user_id,
-                        product_id: item.product.product_id
+                        product_id: item.product.product_id,
+                        history_product_count: item.quantity // Добавляем количество товаров
                     }).unwrap()
                 )
             );
@@ -131,7 +141,7 @@ function CartPage() {
     };
 
     const totalPrice = cartItems.reduce((total, item) => total + (item.product?.price || 0) * item.quantity, 0);
-    const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+    const totalItems = cartItems.reduce((total, item) => total + Number(item.quantity), 0);
 
     if (isLoading) {
         return (
@@ -157,14 +167,17 @@ function CartPage() {
             <header className="cart-header">
                 <div className="header-content">
                     <h1 className="cart-title">Ваша корзина</h1>
-                    <p className="cart-subtitle">{totalItems} товар(ов) на сумму ₽{totalPrice.toLocaleString()}</p>
+                    <p className="cart-subtitle">
+                        {totalItems} {totalItems === 1 ? 'товар' : totalItems >= 2 && totalItems <= 4 ? 'товара' : 'товаров'} на
+                        сумму ₽{totalPrice.toLocaleString()}
+                    </p>
                 </div>
             </header>
 
             <main className="cart-main">
                 {cartItems.length > 0 ? (
                     <div className="cart-layout">
-                        <div className="cart-products">
+                    <div className="cart-products">
                             {cartItems.map((item) => (
                                 <div key={item.product.product_id} className="cart-product-item">
                                     <div className="product-image-wrapper">
@@ -198,31 +211,27 @@ function CartPage() {
                                             </button>
                                         </div>
                                         <div className="product-price">₽ {item.product.price.toLocaleString()}</div>
-                                        <div className="product-controls">
-                                            <div className="quantity-controls">
-                                                <button
-                                                    onClick={() => handleQuantityChange(item.product.product_id, item.quantity - 1)}
-                                                    disabled={item.quantity <= 1}
-                                                    aria-label="Уменьшить количество"
-                                                >
-                                                    −
-                                                </button>
-                                                <span className="quantity-value">{item.quantity}</span>
-                                                <button
-                                                    onClick={() => handleQuantityChange(item.product.product_id, item.quantity + 1)}
-                                                    aria-label="Увеличить количество"
-                                                >
-                                                    +
-                                                </button>
-                                            </div>
-                                            <div className="item-total">
-                                                ₽ {(item.product.price * item.quantity).toLocaleString()}
-                                            </div>
+                                        <div className="quantity-controls">
+                                            <button
+                                                onClick={() => handleQuantityChange(item.product.product_id, -1)}
+                                                disabled={item.quantity <= 1 || isUpdating[item.product.product_id]}
+                                            >
+                                                −
+                                            </button>
+                                            <span className="quantity-value">
+                                            {isUpdating[item.product.product_id] ? '...' : item.quantity}
+                                            </span>
+                                            <button
+                                                onClick={() => handleQuantityChange(item.product.product_id, 1)}
+                                                disabled={isUpdating[item.product.product_id]}
+                                            >
+                                                +
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                        </div>
+                    </div>
 
                         <div className="cart-summary">
                             <div className="summary-card">
@@ -232,7 +241,7 @@ function CartPage() {
                                     <span>₽ {totalPrice.toLocaleString()}</span>
                                 </div>
                                 <div className="summary-row">
-                                    <span>Доставка</span>
+                                <span>Доставка</span>
                                     <span>Бесплатно</span>
                                 </div>
                                 <div className="summary-total">
