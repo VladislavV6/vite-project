@@ -10,6 +10,7 @@ import ProductPage from "./productPage/product.jsx";
 import PurchaseHistoryPage from "./historyPage/purchaseHistory.jsx";
 import OrdersPage from "./profilePage/profile.jsx";
 import HomePage from "./homePage/home.jsx";
+import SupportPage from "./ticketPage/ticket.jsx";
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { login } from './store/slices/authSlice';
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/product/:productId" element={<ProductPage />} />
                 <Route path="/purchase-history" element={<PurchaseHistoryPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
+                <Route path="/support" element={<SupportPage />} />
             </Routes>
         </Router>
     );

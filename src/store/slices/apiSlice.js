@@ -153,6 +153,41 @@ export const apiSlice = createApi({
             }),
             invalidatesTags: ['Orders'],
         }),
+        createSupportTicket: builder.mutation({
+            query: (ticketData) => ({
+                url: '/support/tickets',
+                method: 'POST',
+                body: ticketData,
+            }),
+        }),
+        getUserTickets: builder.query({
+            query: (user_id) => `/support/tickets/user/${user_id}`,
+            providesTags: ['SupportTickets'],
+        }),
+        getAllTickets: builder.query({
+            query: () => '/support/tickets',
+            providesTags: ['SupportTickets'],
+        }),
+        getTicketDetails: builder.query({
+            query: (ticket_id) => `/support/tickets/${ticket_id}`,
+            providesTags: ['TicketDetails'],
+        }),
+        addTicketReply: builder.mutation({
+            query: ({ ticket_id, ...replyData }) => ({
+                url: `/support/tickets/${ticket_id}/replies`,
+                method: 'POST',
+                body: replyData,
+            }),
+            invalidatesTags: ['TicketDetails'],
+        }),
+        updateTicketStatus: builder.mutation({
+            query: ({ ticket_id, status }) => ({
+                url: `/support/tickets/${ticket_id}/status`,
+                method: 'PUT',
+                body: { status },
+            }),
+            invalidatesTags: ['SupportTickets', 'TicketDetails'],
+        }),
     }),
 });
 
@@ -183,4 +218,10 @@ export const {
     useGetPurchaseHistoryQuery,
     useAddToPurchaseHistoryMutation,
     useDeleteOrderMutation,
+    useCreateSupportTicketMutation,
+    useGetUserTicketsQuery,
+    useGetAllTicketsQuery,
+    useGetTicketDetailsQuery,
+    useAddTicketReplyMutation,
+    useUpdateTicketStatusMutation,
 } = apiSlice;

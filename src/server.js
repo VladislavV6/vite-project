@@ -648,6 +648,178 @@ app.delete('/admin/orders/:orderId', async (req, res) => {
     }
 });
 
+app.get('/support/tickets/user/:user_id', async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const result = await pool.query(
+            `SELECT t.*, o.order_id as order_number
+             FROM "TechStore"."support_tickets" t
+             LEFT JOIN "TechStore"."orders" o ON t.order_id = o.order_id
+             WHERE t.user_id = $1
+             ORDER BY t.created_at DESC`,
+            [user_id]
+        );
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Ошибка при получении тикетов:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.post('/support/tickets', async (req, res) => {
+    const { user_id, order_id, subject, message } = req.body;
+
+    try {
+        if (order_id) {
+            const orderCheck = await pool.query(
+                'SELECT order_id FROM "TechStore"."orders" WHERE order_id = $1',
+                [order_id]
+            );
+
+            if (orderCheck.rows.length === 0) {
+                return res.status(400).json({ message: 'Указанный заказ не существует' });
+            }
+        }
+
+        const result = await pool.query(
+            `INSERT INTO "TechStore"."support_tickets" 
+             (user_id, order_id, subject, message)
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [user_id, order_id || null, subject, message]
+        );
+
+        res.status(201).json({ message: 'Тикет успешно создан', ticket: result.rows[0] });
+    } catch (err) {
+        console.error('Ошибка при создании тикета:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.get('/support/tickets', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT 
+                t.*, 
+                u.name as user_name, 
+                u.email as user_email, 
+                o.order_id as order_number
+             FROM "TechStore"."support_tickets" t
+             JOIN "TechStore"."users" u ON t.user_id = u.user_id
+             LEFT JOIN "TechStore"."orders" o ON t.order_id = o.order_id
+             ORDER BY t.created_at DESC`
+        );
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Ошибка при получении тикетов:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.get('/support/tickets/:ticket_id', async (req, res) => {
+    const { ticket_id } = req.params;
+
+    try {
+        const ticketResult = await pool.query(
+            `SELECT t.*, u.name as user_name, u.email as user_email, o.order_id as order_number
+             FROM "TechStore"."support_tickets" t
+             JOIN "TechStore"."users" u ON t.user_id = u.user_id
+             LEFT JOIN "TechStore"."orders" o ON t.order_id = o.order_id
+             WHERE t.ticket_id = $1`,
+            [ticket_id]
+        );
+
+        if (ticketResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Тикет не найден' });
+        }
+
+        const repliesResult = await pool.query(
+            `SELECT r.*, u.name as user_name, u.role_id as user_role
+             FROM "TechStore"."ticket_replies" r
+             JOIN "TechStore"."users" u ON r.user_id = u.user_id
+             WHERE r.ticket_id = $1
+             ORDER BY r.created_at ASC`,
+            [ticket_id]
+        );
+
+        res.status(200).json({
+            ticket: ticketResult.rows[0],
+            replies: repliesResult.rows
+        });
+    } catch (err) {
+        console.error('Ошибка при получении тикета:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.post('/support/tickets/:ticket_id/replies', async (req, res) => {
+    const { ticket_id } = req.params;
+    const { user_id, message } = req.body;
+
+    try {
+        await pool.query('BEGIN');
+
+        const replyResult = await pool.query(
+            `INSERT INTO "TechStore"."ticket_replies" 
+             (ticket_id, user_id, message)
+             VALUES ($1, $2, $3) RETURNING *`,
+            [ticket_id, user_id, message]
+        );
+
+        const user = await pool.query(
+            'SELECT role_id FROM "TechStore"."users" WHERE user_id = $1',
+            [user_id]
+        );
+
+        if (user.rows[0].role_id === 1) {
+            await pool.query(
+                `UPDATE "TechStore"."support_tickets" 
+                 SET status = 'in_progress', updated_at = CURRENT_TIMESTAMP
+                 WHERE ticket_id = $1`,
+                [ticket_id]
+            );
+        }
+
+        await pool.query('COMMIT');
+
+        res.status(201).json({
+            message: 'Ответ успешно добавлен',
+            reply: replyResult.rows[0]
+        });
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error('Ошибка при добавлении ответа:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.put('/support/tickets/:ticket_id/status', async (req, res) => {
+    const { ticket_id } = req.params;
+    const { status } = req.body;
+
+    try {
+        const result = await pool.query(
+            `UPDATE "TechStore"."support_tickets" 
+             SET status = $1, updated_at = CURRENT_TIMESTAMP
+             WHERE ticket_id = $2 RETURNING *`,
+            [status, ticket_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Тикет не найден' });
+        }
+
+        res.status(200).json({
+            message: 'Статус тикета обновлен',
+            ticket: result.rows[0]
+        });
+    } catch (err) {
+        console.error('Ошибка при обновлении статуса:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });

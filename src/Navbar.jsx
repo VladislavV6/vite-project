@@ -23,6 +23,7 @@ function Navbar() {
                 <Link to="/favorites">Избранное</Link>
                 <Link to="/purchase-history">История покупок</Link>
                 <Link to="/cart">Корзина</Link>
+                <Link to="/support">Техподдержка</Link>
             </div>
     <div className="nav-right">
         {isAuthenticated ? (
