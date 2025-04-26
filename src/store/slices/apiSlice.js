@@ -188,6 +188,16 @@ export const apiSlice = createApi({
             }),
             invalidatesTags: ['SupportTickets', 'TicketDetails'],
         }),
+        deleteTicket: builder.mutation({
+            query: (ticketId) => ({
+                url: `/support/tickets/${ticketId}`,
+                method: 'DELETE',
+            }),
+            invalidatesTags: ['SupportTickets'],
+        }),
+        checkOrderExists: builder.query({
+            query: ({ orderId, userId }) => `/orders/check/${orderId}/${userId}`,
+        }),
     }),
 });
 
@@ -224,4 +234,6 @@ export const {
     useGetTicketDetailsQuery,
     useAddTicketReplyMutation,
     useUpdateTicketStatusMutation,
+    useDeleteTicketMutation,
+    useCheckOrderExistsQuery,
 } = apiSlice;

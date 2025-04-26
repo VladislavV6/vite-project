@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import { useSelector } from 'react-redux';
 import { useGetPurchaseHistoryQuery } from '../store/slices/apiSlice';
 import "./style.css";
@@ -6,7 +6,11 @@ import { Link } from 'react-router-dom';
 
 function PurchaseHistoryPage() {
     const user = useSelector(state => state.auth.user);
-    const { data: history = [], isLoading, isError } = useGetPurchaseHistoryQuery(user?.user_id);
+    const { data: history = [], isLoading, isError, refetch } = useGetPurchaseHistoryQuery(user?.user_id);
+
+    useEffect(() => {
+        refetch();
+    }, [refetch]);
 
     if (isLoading) {
         return (

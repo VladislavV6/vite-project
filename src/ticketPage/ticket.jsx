@@ -6,7 +6,9 @@ import {
     useGetAllTicketsQuery,
     useGetTicketDetailsQuery,
     useAddTicketReplyMutation,
-    useUpdateTicketStatusMutation
+    useUpdateTicketStatusMutation,
+    useDeleteTicketMutation,
+    useCheckOrderExistsQuery
 } from '../store/slices/apiSlice';
 import {
     setTickets,
@@ -21,20 +23,18 @@ import "./style.css";
 function SupportPage() {
     const dispatch = useDispatch();
     const user = useSelector(state => state.auth.user);
-    const {
-        tickets,
-        activeTicket,
-        newTicket,
-        replyMessage
-    } = useSelector(state => state.support);
+    const { tickets, activeTicket, newTicket, replyMessage } = useSelector(state => state.support);
 
     const [isLoading, setIsLoading] = useState(false);
     const [localReplies, setLocalReplies] = useState([]);
+    const [orderIdInput, setOrderIdInput] = useState('');
+    const [orderCheckLoading, setOrderCheckLoading] = useState(false);
+    const [orderCheckError, setOrderCheckError] = useState(null);
     const pendingReplies = useRef(new Set());
     const isSending = useRef(false);
     const lastActiveTicket = useRef(null);
 
-    // Запросы данных с защитой от бесконечных циклов
+    // API queries
     const { data: userTickets = [], refetch: refetchUserTickets } = useGetUserTicketsQuery(user?.user_id, {
         skip: !user?.user_id
     });
@@ -54,8 +54,12 @@ function SupportPage() {
     const [createTicket] = useCreateSupportTicketMutation();
     const [addReply, { isLoading: isReplying }] = useAddTicketReplyMutation();
     const [updateStatus] = useUpdateTicketStatusMutation();
+    const [deleteTicket] = useDeleteTicketMutation();
+    const { refetch: checkOrderExists } = useCheckOrderExistsQuery({
+        orderId: orderIdInput,
+        userId: user?.user_id
+    }, { skip: !orderIdInput || !user?.user_id });
 
-    // Стабильный обработчик выбора тикета
     const handleSelectTicket = useCallback((ticketId) => {
         if (activeTicket !== ticketId) {
             dispatch(setActiveTicket(ticketId));
@@ -65,15 +69,12 @@ function SupportPage() {
         }
     }, [activeTicket, dispatch]);
 
-    // Загрузка тикетов с защитой от циклов
     useEffect(() => {
         const loadedTickets = user?.role_id === 1 ? allTickets : userTickets;
 
-        // Проверяем, действительно ли нужно обновлять tickets
         if (JSON.stringify(loadedTickets) !== JSON.stringify(tickets)) {
             dispatch(setTickets(loadedTickets));
 
-            // Выбираем первый тикет, если нет активного
             if (!activeTicket && loadedTickets[0] && loadedTickets[0].ticket_id !== lastActiveTicket.current) {
                 lastActiveTicket.current = loadedTickets[0].ticket_id;
                 dispatch(setActiveTicket(loadedTickets[0].ticket_id));
@@ -81,7 +82,6 @@ function SupportPage() {
         }
     }, [user, userTickets, allTickets, dispatch, tickets, activeTicket]);
 
-    // Синхронизация сообщений с защитой от циклов
     useEffect(() => {
         if (!ticketDetails?.replies || !activeTicket) return;
 
@@ -96,17 +96,46 @@ function SupportPage() {
             );
 
             const newReplies = [...newServerReplies, ...filteredLocalReplies];
-
-            // Проверяем, действительно ли нужно обновлять
             return JSON.stringify(newReplies) !== JSON.stringify(prevReplies) ? newReplies : prevReplies;
         });
 
         setIsLoading(false);
     }, [ticketDetails, activeTicket]);
 
+    const checkOrder = async () => {
+        if (!orderIdInput) {
+            setOrderCheckError(null);
+            return;
+        }
+
+        setOrderCheckLoading(true);
+        setOrderCheckError(null);
+
+        try {
+            const { data } = await checkOrderExists({
+                orderId: orderIdInput,
+                userId: user.user_id
+            });
+
+            if (!data?.exists) {
+                setOrderCheckError('Указанный заказ не существует или не принадлежит вам');
+            }
+        } catch (err) {
+            setOrderCheckError('Ошибка при проверке заказа');
+            console.error('Ошибка при проверке заказа:', err);
+        } finally {
+            setOrderCheckLoading(false);
+        }
+    };
+
     const handleCreateTicket = async () => {
         if (!newTicket.subject || !newTicket.message) {
             alert('Заполните все обязательные поля');
+            return;
+        }
+
+        if (orderCheckError) {
+            alert('Исправьте ошибки перед отправкой');
             return;
         }
 
@@ -119,6 +148,8 @@ function SupportPage() {
             }).unwrap();
 
             dispatch(resetNewTicket());
+            setOrderIdInput('');
+            setOrderCheckError(null);
             await refetchUserTickets();
         } catch (err) {
             console.error('Ошибка при создании тикета:', err);
@@ -187,6 +218,20 @@ function SupportPage() {
         }
     };
 
+    const handleCloseTicket = async () => {
+        try {
+            await deleteTicket(activeTicket).unwrap();
+            dispatch(setActiveTicket(null));
+            if (user?.role_id === 1) {
+                await refetchAllTickets();
+            } else {
+                await refetchUserTickets();
+            }
+        } catch (err) {
+            console.error('Ошибка при закрытии тикета:', err);
+        }
+    };
+
     const activeTicketData = activeTicket ? tickets.find(t => t.ticket_id === activeTicket) : null;
     const allReplies = localReplies;
     const isTicketResolved = activeTicketData?.status === 'resolved';
@@ -195,212 +240,257 @@ function SupportPage() {
     return (
         <div className="support-page">
             <header className="support-header">
-                <h1>Техническая поддержка</h1>
-                <p>{isAdmin ? 'Все обращения пользователей' : 'Ваши обращения в поддержку'}</p>
+                <div className="header-content">
+                    <h1 className="support-title">Техническая поддержка</h1>
+                    <p className="support-subtitle">
+                        {isAdmin ? 'Все обращения пользователей' : 'Ваши обращения в поддержку'}
+                    </p>
+                </div>
             </header>
 
-            <div className="support-layout">
-                <div className="tickets-list">
-                    <h2>{isAdmin ? 'Все обращения' : 'Ваши обращения'}</h2>
-                    {tickets?.length > 0 ? (
-                        <div className="tickets-container">
-                            {tickets.map(ticket => (
-                                <div
-                                    key={`ticket-${ticket.ticket_id}`}
-                                    className={`ticket-card ${ticket.ticket_id === activeTicket ? 'active' : ''}`}
-                                    onClick={() => handleSelectTicket(ticket.ticket_id)}
-                                >
-                                    <div className="ticket-header">
-                                        <span className="ticket-id">#{ticket.ticket_id}</span>
-                                        <span className={`ticket-status ${ticket.status}`}>
-                                            {ticket.status === 'open' ? 'Открыт' :
-                                                ticket.status === 'in_progress' ? 'В работе' : 'Решен'}
-                                        </span>
+            <main className="support-main">
+                <div className="support-container">
+                    <div className="tickets-sidebar">
+                        <h2 className="sidebar-title">{isAdmin ? 'Все обращения' : 'Ваши обращения'}</h2>
+                        {tickets?.length > 0 ? (
+                            <div className="tickets-list">
+                                {tickets.map(ticket => (
+                                    <div
+                                        key={`ticket-${ticket.ticket_id}`}
+                                        className={`ticket-card ${ticket.ticket_id === activeTicket ? 'active' : ''}`}
+                                        onClick={() => handleSelectTicket(ticket.ticket_id)}
+                                    >
+                                        <div className="ticket-card-header">
+                                            <span className="ticket-id">#{ticket.ticket_id}</span>
+                                            <span className={`ticket-status ${ticket.status}`}>
+                                                {ticket.status === 'open' ? 'Открыт' :
+                                                    ticket.status === 'in_progress' ? 'В работе' : 'Решен'}
+                                            </span>
+                                        </div>
+                                        <h3 className="ticket-subject">{ticket.subject}</h3>
+                                        <p className="ticket-date">
+                                            {new Date(ticket.created_at).toLocaleString('ru-RU')}
+                                        </p>
+                                        {ticket.order_number && (
+                                            <p className="ticket-order">Заказ #{ticket.order_number}</p>
+                                        )}
                                     </div>
-                                    <h3 className="ticket-subject">{ticket.subject}</h3>
-                                    <p className="ticket-date">
-                                        {new Date(ticket.created_at).toLocaleString('ru-RU')}
-                                    </p>
-                                    {ticket.order_number && (
-                                        <p className="ticket-order">Заказ #{ticket.order_number}</p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="no-tickets">
-                            <p>{isAdmin ? 'Нет активных обращений' : 'У вас пока нет обращений в поддержку'}</p>
-                        </div>
-                    )}
-                </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="no-tickets">
+                                <div className="empty-icon">📩</div>
+                                <h3>{isAdmin ? 'Нет активных обращений' : 'У вас пока нет обращений'}</h3>
+                                <p>{isAdmin ? 'Все тикеты решены' : 'Создайте новое обращение'}</p>
+                            </div>
+                        )}
+                    </div>
 
-                <div className="ticket-details">
-                    {isLoading ? (
-                        <div className="loading">Загрузка...</div>
-                    ) : activeTicketData ? (
-                        <>
-                            <div className="ticket-info">
-                                <h2>{activeTicketData.subject}</h2>
-                                <div className="ticket-meta">
-                                    <span className="ticket-id">#{activeTicketData.ticket_id}</span>
-                                    <span className={`ticket-status ${activeTicketData.status}`}>
-                                        {activeTicketData.status === 'open' ? 'Открыт' :
-                                            activeTicketData.status === 'in_progress' ? 'В работе' : 'Решен'}
-                                    </span>
-                                    {activeTicketData.order_number && (
-                                        <span className="ticket-order">Заказ #{activeTicketData.order_number}</span>
-                                    )}
+                    <div className="ticket-content">
+                        {isLoading ? (
+                            <div className="loading-container">
+                                <div className="loader"></div>
+                                <p>Загружаем детали обращения...</p>
+                            </div>
+                        ) : activeTicketData ? (
+                            <>
+                                <div className="ticket-header">
+                                    <div className="ticket-header-content">
+                                        <h2 className="ticket-title">{activeTicketData.subject}</h2>
+                                        <div className="ticket-meta">
+                                            <span className="ticket-id">#{activeTicketData.ticket_id}</span>
+                                            <span className={`ticket-status ${activeTicketData.status}`}>
+                                                {activeTicketData.status === 'open' ? 'Открыт' :
+                                                    activeTicketData.status === 'in_progress' ? 'В работе' : 'Решен'}
+                                            </span>
+                                            {activeTicketData.order_number && (
+                                                <span className="ticket-order">Заказ #{activeTicketData.order_number}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <p className="ticket-date">
+                                        Создано: {new Date(activeTicketData.created_at).toLocaleString('ru-RU')}
+                                    </p>
                                 </div>
-                                <p className="ticket-date">
-                                    Создано: {new Date(activeTicketData.created_at).toLocaleString('ru-RU')}
-                                </p>
+
                                 <div className="ticket-message">
                                     <p>{activeTicketData.message}</p>
                                 </div>
-                            </div>
 
-                            <div className="chat-container">
-                                <div className="messages-list">
-                                    {allReplies.length > 0 ? (
-                                        allReplies.map((reply) => (
-                                            <div
-                                                key={`reply-${reply.reply_id || Date.now()}`}
-                                                className={`message ${reply.user_id === user?.user_id ? 'own' : 'other'}`}
-                                            >
-                                                <div className="message-header">
-                                                    <span className="message-author">
-                                                        {reply.user_name || 'Пользователь'}
-                                                        {reply.user_role === 1 && ' (Администратор)'}
-                                                    </span>
-                                                    <span className="message-date">
-                                                        {new Date(reply.created_at).toLocaleString('ru-RU')}
-                                                    </span>
+                                <div className="ticket-chat">
+                                    <div className="chat-messages">
+                                        {allReplies.length > 0 ? (
+                                            allReplies.map((reply) => (
+                                                <div
+                                                    key={`reply-${reply.reply_id || Date.now()}`}
+                                                    className={`message ${reply.user_id === user?.user_id ? 'own' : 'other'}`}
+                                                >
+                                                    <div className="message-header">
+                                                        <span className="message-author">
+                                                            {reply.user_name || 'Пользователь'}
+                                                            {reply.user_role === 1 && ' (Администратор)'}
+                                                        </span>
+                                                        <span className="message-date">
+                                                            {new Date(reply.created_at).toLocaleString('ru-RU')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="message-content">
+                                                        <p>{reply.message}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="message-content">
-                                                    <p>{reply.message}</p>
-                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="no-messages">
+                                                <p>Пока нет сообщений в чате</p>
                                             </div>
-                                        ))
-                                    ) : (
-                                        <p className="no-messages">Пока нет сообщений в чате</p>
-                                    )}
-                                </div>
-
-                                {!isTicketResolved && (
-                                    <div className="message-input">
-                                        <textarea
-                                            value={replyMessage}
-                                            onChange={(e) => dispatch(setReplyMessage(e.target.value))}
-                                            placeholder="Введите ваше сообщение..."
-                                            rows="3"
-                                            disabled={isReplying}
-                                        />
-                                        <button
-                                            onClick={handleAddReply}
-                                            disabled={!replyMessage || isReplying}
-                                        >
-                                            {isReplying ? 'Отправка...' : 'Отправить'}
-                                        </button>
-                                    </div>
-                                )}
-
-                                {isTicketResolved && (
-                                    <div className="ticket-resolved-notice">
-                                        <p>Тикет закрыт. Новые сообщения нельзя отправить.</p>
-                                        {!isAdmin && (
-                                            <button
-                                                className="new-ticket-button"
-                                                onClick={() => dispatch(setActiveTicket(null))}
-                                            >
-                                                Создать новый тикет
-                                            </button>
                                         )}
                                     </div>
+
+                                    {!isTicketResolved && (
+                                        <div className="chat-input">
+                                            <textarea
+                                                value={replyMessage}
+                                                onChange={(e) => dispatch(setReplyMessage(e.target.value))}
+                                                placeholder="Введите ваше сообщение..."
+                                                rows="3"
+                                                disabled={isReplying}
+                                            />
+                                            <button
+                                                onClick={handleAddReply}
+                                                disabled={!replyMessage || isReplying}
+                                                className="send-button"
+                                            >
+                                                {isReplying ? (
+                                                    <>
+                                                        <span className="spinner"></span>
+                                                        Отправка...
+                                                    </>
+                                                ) : 'Отправить'}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {isTicketResolved && (
+                                        <div className="resolved-notice">
+                                            <p>Обращение закрыто. Новые сообщения нельзя отправить.</p>
+                                            {!isAdmin && (
+                                                <div className="resolved-actions">
+                                                    <button
+                                                        className="close-button"
+                                                        onClick={handleCloseTicket}
+                                                    >
+                                                        Закрыть обращение
+                                                    </button>
+                                                    <button
+                                                        className="new-ticket-button"
+                                                        onClick={() => dispatch(setActiveTicket(null))}
+                                                    >
+                                                        Создать новое обращение
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {isAdmin && !isTicketResolved && (
+                                    <div className="admin-actions">
+                                        <h3>Действия администратора</h3>
+                                        <div className="status-actions">
+                                            <button
+                                                onClick={() => handleUpdateStatus('open')}
+                                                disabled={activeTicketData.status === 'open'}
+                                                className={`status-button ${activeTicketData.status === 'open' ? 'active' : ''}`}
+                                            >
+                                                Открыть
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateStatus('in_progress')}
+                                                disabled={activeTicketData.status === 'in_progress'}
+                                                className={`status-button ${activeTicketData.status === 'in_progress' ? 'active' : ''}`}
+                                            >
+                                                В работу
+                                            </button>
+                                            <button
+                                                onClick={() => handleUpdateStatus('resolved')}
+                                                className="resolve-button"
+                                            >
+                                                Решить
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="no-ticket-selected">
+                                {activeTicket ? (
+                                    <p>Загрузка деталей обращения...</p>
+                                ) : (
+                                    <>
+                                        {!isAdmin && (
+                                            <div className="new-ticket-container">
+                                                <h2>Создать новое обращение</h2>
+                                                <div className="form-group">
+                                                    <label>Номер заказа (если относится к заказу)</label>
+                                                    <div className="order-input-container">
+                                                        <input
+                                                            type="text"
+                                                            value={orderIdInput}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+                                                                setOrderIdInput(value);
+                                                                dispatch(updateNewTicket({ order_id: value }));
+                                                            }}
+                                                            placeholder="Необязательно"
+                                                            onBlur={checkOrder}
+                                                            className="form-input"
+                                                        />
+                                                        {orderCheckLoading && <span className="checking-indicator">Проверка...</span>}
+                                                    </div>
+                                                    {orderCheckError && <p className="error-message">{orderCheckError}</p>}
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Тема обращения*</label>
+                                                    <input
+                                                        type="text"
+                                                        value={newTicket.subject || ''}
+                                                        onChange={(e) => dispatch(updateNewTicket({ subject: e.target.value }))}
+                                                        placeholder="Кратко опишите проблему"
+                                                        required
+                                                        className="form-input"
+                                                    />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label>Описание проблемы*</label>
+                                                    <textarea
+                                                        value={newTicket.message || ''}
+                                                        onChange={(e) => dispatch(updateNewTicket({ message: e.target.value }))}
+                                                        placeholder="Подробно опишите вашу проблему"
+                                                        rows="6"
+                                                        required
+                                                        className="form-textarea"
+                                                    />
+                                                </div>
+                                                <button
+                                                    onClick={handleCreateTicket}
+                                                    disabled={orderCheckError}
+                                                    className="submit-button"
+                                                >
+                                                    Отправить в поддержку
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
-
-                            {isAdmin && !isTicketResolved && (
-                                <div className="ticket-actions">
-                                    <h3>Действия администратора</h3>
-                                    <div className="status-buttons">
-                                        <button
-                                            onClick={() => handleUpdateStatus('open')}
-                                            disabled={activeTicketData.status === 'open'}
-                                        >
-                                            Открыть
-                                        </button>
-                                        <button
-                                            onClick={() => handleUpdateStatus('in_progress')}
-                                            disabled={activeTicketData.status === 'in_progress'}
-                                        >
-                                            В работу
-                                        </button>
-                                        <button
-                                            onClick={() => handleUpdateStatus('resolved')}
-                                        >
-                                            Решить
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="no-ticket-selected">
-                            {activeTicket ? (
-                                <p>Загрузка деталей тикета...</p>
-                            ) : (
-                                <>
-                                    <p>Выберите тикет для просмотра</p>
-                                    {!isAdmin && (
-                                        <button
-                                            className="new-ticket-button"
-                                            onClick={() => dispatch(setActiveTicket(null))}
-                                        >
-                                            Создать новый тикет
-                                        </button>
-                                    )}
-                                </>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {!activeTicket && !isAdmin && (
-                    <div className="new-ticket-form">
-                        <h2>Создать новое обращение</h2>
-                        <div className="form-group">
-                            <label>Номер заказа (если относится к заказу)</label>
-                            <input
-                                type="text"
-                                value={newTicket.order_id || ''}
-                                onChange={(e) => dispatch(updateNewTicket({order_id: e.target.value}))}
-                                placeholder="Необязательно"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Тема обращения*</label>
-                            <input
-                                type="text"
-                                value={newTicket.subject || ''}
-                                onChange={(e) => dispatch(updateNewTicket({ subject: e.target.value }))}
-                                placeholder="Кратко опишите проблему"
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Описание проблемы*</label>
-                            <textarea
-                                value={newTicket.message || ''}
-                                onChange={(e) => dispatch(updateNewTicket({ message: e.target.value }))}
-                                placeholder="Подробно опишите вашу проблему"
-                                rows="6"
-                                required
-                            />
-                        </div>
-                        <button onClick={handleCreateTicket}>Отправить в поддержку</button>
+                        )}
                     </div>
-                )}
-            </div>
+                </div>
+            </main>
+
+            <footer className="support-footer">
+                <p>© {new Date().getFullYear()} TechStore. Все права защищены.</p>
+            </footer>
         </div>
     );
 }

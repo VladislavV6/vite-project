@@ -27,6 +27,14 @@ function OrdersPage() {
     const [updateError, setUpdateError] = useState('');
 
     useEffect(() => {
+        if (user?.role_id === 1) {
+            refetchAllOrders();
+        } else {
+            refetchUserOrders();
+        }
+    }, [user?.role_id, refetchAllOrders, refetchUserOrders]);
+
+    useEffect(() => {
         if (user?.role_id === 1 && allOrdersData) {
             dispatch(setOrders(allOrdersData));
         } else if (ordersData) {
@@ -179,7 +187,7 @@ function OrdersPage() {
                 <section className="orders-card">
                     <h2 className="orders-title">
                         <i className="orders-icon">📦</i>
-                        {user?.role_id === 1 ? 'Все заказы' : 'История заказов'}
+                        {user?.role_id === 1 ? 'Все заказы' : 'Ваши заказы'}
                     </h2>
 
                     {orders && orders.length > 0 ? (

@@ -820,6 +820,52 @@ app.put('/support/tickets/:ticket_id/status', async (req, res) => {
     }
 });
 
+app.delete('/support/tickets/:ticket_id', async (req, res) => {
+    const { ticket_id } = req.params;
+
+    try {
+        await pool.query('BEGIN');
+
+        await pool.query(
+            'DELETE FROM "TechStore"."ticket_replies" WHERE ticket_id = $1',
+            [ticket_id]
+        );
+
+        const result = await pool.query(
+            'DELETE FROM "TechStore"."support_tickets" WHERE ticket_id = $1 RETURNING *',
+            [ticket_id]
+        );
+
+        if (result.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ message: 'Тикет не найден' });
+        }
+
+        await pool.query('COMMIT');
+        res.status(200).json({ message: 'Тикет успешно удален', ticket: result.rows[0] });
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error('Ошибка при удалении тикета:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
+app.get('/orders/check/:orderId/:userId', async (req, res) => {
+    const { orderId, userId } = req.params;
+
+    try {
+        const result = await pool.query(
+            'SELECT order_id FROM "TechStore"."orders" WHERE order_id = $1 AND user_id = $2',
+            [orderId, userId]
+        );
+
+        res.status(200).json({ exists: result.rows.length > 0 });
+    } catch (err) {
+        console.error('Ошибка при проверке заказа:', err);
+        res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Сервер запущен на http://localhost:${port}`);
 });
