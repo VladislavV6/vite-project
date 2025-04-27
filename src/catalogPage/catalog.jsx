@@ -34,7 +34,7 @@ function CatalogPage() {
     const favorites = useSelector(state => state.favorites.items);
     const { data: favoritesData } = useGetFavoritesQuery(user?.user_id);
     const { data: categories = [] } = useGetCategoriesQuery();
-    const { data: products = [], isLoading, isError, refetch } = useGetProductsQuery();
+    const { data: products = [], isLoading, isError } = useGetProductsQuery();
 
     useEffect(() => {
         if (favoritesData) {
@@ -98,7 +98,6 @@ function CatalogPage() {
 
         try {
             await deleteProduct(productId).unwrap();
-            refetch();
             alert('Товар успешно удален');
         } catch (err) {
             console.error('Ошибка при удалении товара:', err);
@@ -112,7 +111,6 @@ function CatalogPage() {
                 productId: productId,
                 productData: updatedData
             }).unwrap();
-            refetch();
             setEditingProduct(null);
             alert('Товар успешно обновлен!');
             return true;
@@ -137,7 +135,7 @@ function CatalogPage() {
             <div className="error-container" data-testid="error-message">
                 <h2>Произошла ошибка</h2>
                 <p>Не удалось загрузить список товаров</p>
-                <button onClick={refetch} className="retry-button">
+                <button className="retry-button">
                     Попробовать снова
                 </button>
             </div>
@@ -212,7 +210,6 @@ function CatalogPage() {
                     <AddProductForm
                         onCancel={() => setShowForm(false)}
                         userId={user.user_id}
-                        onProductAdded={refetch}
                     />
                 )}
 
@@ -221,10 +218,6 @@ function CatalogPage() {
                         product={editingProduct}
                         onCancel={() => setEditingProduct(null)}
                         onSave={handleUpdateProduct}
-                        onProductUpdated={() => {
-                            refetch();
-                            setEditingProduct(null);
-                        }}
                         categories={categories}
                     />
                 )}

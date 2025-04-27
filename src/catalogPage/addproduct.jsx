@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAddProductMutation } from '../store/slices/apiSlice.js';
 import "./style.css";
 
-function AddProductForm({ onCancel, onProductAdded }) {
+function AddProductForm({ onCancel }) {
     const [productName, setProductName] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [price, setPrice] = useState('');
@@ -40,7 +40,6 @@ function AddProductForm({ onCancel, onProductAdded }) {
         try {
             await addProduct(productData).unwrap();
             alert('Продукт успешно добавлен!');
-            onProductAdded();
             onCancel();
         } catch (err) {
             console.error('Ошибка при добавлении продукта:', err);

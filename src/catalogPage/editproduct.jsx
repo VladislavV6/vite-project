@@ -1,9 +1,8 @@
-// editproduct.jsx
 import React, { useState } from 'react';
 import { useUpdateProductMutation, useGetCategoriesQuery } from '../store/slices/apiSlice.js';
 import "./style.css";
 
-function EditProductForm({ product, onCancel, onSave, categories }) {
+function EditProductForm({ product, onCancel }) {
     const [productName, setProductName] = useState(product.product_name);
     const [categoryId, setCategoryId] = useState(product.category_id);
     const [price, setPrice] = useState(product.price);
@@ -11,6 +10,11 @@ function EditProductForm({ product, onCancel, onSave, categories }) {
     const [productImage, setProductImage] = useState(product.product_image);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Используем хук для получения категорий
+    const { data: categories = [] } = useGetCategoriesQuery();
+    // Используем хук для мутации обновления продукта
+    const [updateProduct] = useUpdateProductMutation();
 
     const validateForm = () => {
         const newErrors = {};
@@ -30,19 +34,25 @@ function EditProductForm({ product, onCancel, onSave, categories }) {
 
         setIsSubmitting(true);
 
-        const productData = {
-            product_name: productName.trim(),
-            category_id: parseInt(categoryId, 10),
-            price: parseFloat(price),
-            product_description: productDescription.trim(),
-            product_image: productImage.trim(),
-        };
+        try {
+            const productData = {
+                product_id: product.product_id,
+                product_name: productName.trim(),
+                category_id: parseInt(categoryId, 10),
+                price: parseFloat(price),
+                product_description: productDescription.trim(),
+                product_image: productImage.trim(),
+            };
 
-        const success = await onSave(product.product_id, productData);
-        setIsSubmitting(false);
-
-        if (success) {
-            onCancel();
+            // Вызываем мутацию для обновления продукта
+            await updateProduct({ productId: product.product_id, productData }).unwrap();
+            onCancel(); // Закрываем модальное окно после успешного обновления
+        } catch (error) {
+            console.error('Ошибка при обновлении продукта:', error);
+            // Можно добавить обработку ошибок, например:
+            setErrors({...errors, server: 'Ошибка при сохранении изменений'});
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -89,6 +99,7 @@ function EditProductForm({ product, onCancel, onSave, categories }) {
                             aria-invalid={!!errors.categoryId}
                             aria-describedby="categoryIdError"
                         >
+                            <option value="">Выберите категорию</option>
                             {categories.map(category => (
                                 <option key={category.category_id} value={category.category_id}>
                                     {category.category_name}
@@ -151,6 +162,12 @@ function EditProductForm({ product, onCancel, onSave, categories }) {
                             <span id="productImageError" className="error-message">{errors.productImage}</span>
                         )}
                     </div>
+
+                    {errors.server && (
+                        <div className="form-field error">
+                            <span className="error-message">{errors.server}</span>
+                        </div>
+                    )}
 
                     <div className="form-actions">
                         <button

@@ -5,7 +5,7 @@ import {
     useGetReviewsQuery,
     useAddReviewMutation,
     useDeleteReviewMutation,
-    useAddToCartMutation
+    useAddToCartMutation,
 } from '../store/slices/apiSlice';
 import { useSelector } from 'react-redux';
 import "./style.css";

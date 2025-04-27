@@ -625,6 +625,11 @@ app.delete('/admin/orders/:orderId', async (req, res) => {
         await pool.query('BEGIN');
 
         await pool.query(
+            'UPDATE "TechStore"."support_tickets" SET order_id = NULL WHERE order_id = $1',
+            [orderId]
+        );
+
+        await pool.query(
             'DELETE FROM "TechStore"."order_composition" WHERE order_id = $1',
             [orderId]
         );

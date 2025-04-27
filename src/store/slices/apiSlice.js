@@ -3,7 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 export const apiSlice = createApi({
     reducerPath: 'api',
     baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000' }),
-    tagTypes: ['Favorites'],
+    tagTypes: ['Favorites', 'Product', 'Orders'],
     endpoints: (builder) => ({
         registerUser: builder.mutation({
             query: (userData) => ({
@@ -25,12 +25,15 @@ export const apiSlice = createApi({
                 method: 'POST',
                 body: productData,
             }),
+            invalidatesTags: ['Product'],
         }),
         getProducts: builder.query({
             query: () => '/products',
+            providesTags: ['Product'],
         }),
         getProduct: builder.query({
             query: (productId) => `/products/${productId}`,
+            providesTags: (result, error, productId) => [{ type: 'Product', id: productId }],
         }),
         addFavorite: builder.mutation({
             query: (favoriteData) => ({
@@ -102,6 +105,7 @@ export const apiSlice = createApi({
                 url: `/products/${productId}`,
                 method: 'DELETE',
             }),
+            invalidatesTags: ['Product'],
         }),
         getReviews: builder.query({
             query: (productId) => `/reviews/${productId}`,
@@ -135,6 +139,7 @@ export const apiSlice = createApi({
                 method: 'PUT',
                 body: productData,
             }),
+            invalidatesTags: ['Product'],
         }),
         getPurchaseHistory: builder.query({
             query: (userId) => `/store_history/${userId}`,
